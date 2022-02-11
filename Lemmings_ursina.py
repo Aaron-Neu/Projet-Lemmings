@@ -1,13 +1,16 @@
 """
+Auteurs : Dyami Neu et Andy How
 
-Auteurs : Dyami et Andy
-Projet Lemming en 2.5d
+Projet Lemming en 3d
+
+Ce projet est un jeu en 3d qui utilise la librairie Ursina.
+Toutes licenses associes sont mentionnes dans le fichier texte 'credit.txt'
 """
 from random import randint
 from ursina import curve
 from ursina import *
 
-
+# configure la fenêtre d'affichage
 fullscreen = False
 development_mode = True
 title = 'lemmings 2: Electric Boogaloo'
@@ -20,6 +23,10 @@ window.icon = 'icon.ico'
 
 
 class Lemming(Entity):
+    """
+    Objet lemming, controler par le joueur, on instacie cette classe pour creer un
+    """
+
     def __init__(self, **kwargs):
         super().__init__()
 
@@ -32,6 +39,8 @@ class Lemming(Entity):
         self.color = color.white
         self.texture = 'walk.mov'
 
+        self.__dict__.update(kwargs)
+
         self.vitesse = 1
         self.sens_mouvement = 1  # gauche = -1 droite = 1
 
@@ -39,13 +48,12 @@ class Lemming(Entity):
         self.saut_duration = .5
         self.sauter = False
 
-        self.gravity = 1
-        self.grounded = True
-        self.air_time = 0
-        scene = scene
-        self._start_fall_sequence = None
+        self.gravité = 1
+        self.atterri = True
+        self.air_temps = 0
+        self._sequence_atterrissage = None
 
-        # Verifie si un objet obstrut le lemming et modifie sa position
+        # vérifie si un objet obstrue le lemming et modifie la position du lemming
         ray_up = boxcast(self.world_position, self.down, distance=10, ignore=(
             self, ), traverse_target=scene, thickness=.9)
         if ray_up.hit:
@@ -66,11 +74,12 @@ class Lemming(Entity):
         if ray_left.hit:
             self.x = ray_left.world_point[0] + 1
 
-        target_gravity = self.gravity
-        self.gravity = 0
-        invoke(setattr, self, 'gravity', target_gravity, delay=1/60)
+        target_gravité = self.gravité
+        self.gravité = 0
+        invoke(setattr, self, 'gravité', target_gravité, delay=1/60)
 
     def update(self):
+        # vérifie si le lemming touche un objet
         hit_info = boxcast(
             self.position+Vec3(self.sens_mouvement * time.dt *
                                self.vitesse, self.scale_y/2, 0),
@@ -86,45 +95,49 @@ class Lemming(Entity):
             self.sens_mouvement *= -1
             self.look_at((self.x, self.y, self.sens_mouvement))
 
+        # vérifie si le lemming a atterrie
         ray = boxcast(
             self.world_position+Vec3(0, .1, 0),
             self.down,
-            distance=max(.1, self.air_time * self.gravity),
+            distance=max(.1, self.air_temps * self.gravité),
             ignore=(self, ),
             traverse_target=scene,
             thickness=self.scale_x*.9
         )
         if ray.hit:
-            if not self.grounded:
-                self.land()
-            self.grounded = True
+            if not self.atterri:
+                self.atterrissage()
+            self.atterri = True
             self.y = ray.world_point[1]
             return
         else:
-            self.grounded = False
+            self.atterri = False
 
-        if not self.grounded and not self.sauter:
-            self.y -= min(self.air_time * self.gravity, ray.distance-.1)
-            self.air_time += time.dt*4 * self.gravity
+        # si le lemming n'as pas atterrie
+        if not self.atterri and not self.sauter:
+            self.y -= min(self.air_temps * self.gravité, ray.distance-.1)
+            self.air_temps += time.dt*4 * self.gravité
+
+        # si le lemming saute
         if self.sauter:
             if boxcast(self.position+(0, .1, 0), self.up, distance=self.scale_y,
                        thickness=.95, ignore=(self,), traverse_target=scene).hit:
                 self.y_animator.kill()
-                self.air_time = 0
-                self.start_fall()
+                self.air_temps = 0
+                self.tombe()
 
-    def jump(self):
-        # Situation ou le saut est impossible
-        if not self.grounded:
+    def saut(self):
+        # situation ou le saut est impossible
+        if not self.atterri:
             return
-        if self._start_fall_sequence:
-            self._start_fall_sequence.kill()
+        if self._sequence_atterrissage:
+            self._sequence_atterrissage.kill()
         if boxcast(self.position+(0, .1, 0), self.up, distance=self.scale_y, thickness=.95,
                    ignore=(self,), traverse_target=scene).hit:
             return
 
         self.sauter = True
-        self.grounded = False
+        self.atterri = False
         target_y = self.y + self.saut_hauteur
         duration = self.saut_duration
 
@@ -135,20 +148,25 @@ class Lemming(Entity):
             target_y = min(hit_above.world_point.y-self.scale_y, target_y)
             duration *= target_y / (self.y+self.saut_hauteur) + .0000001
 
+        # séquence de saut
         self.animate_y(target_y, duration, resolution=30, curve=curve.out_expo)
-        self._start_fall_sequence = invoke(self.start_fall, delay=duration)
+        self._sequence_atterrissage = invoke(self.tombe, delay=duration)
 
-    def start_fall(self):
+    def tombe(self):
         self.y_animator.pause()
         self.sauter = False
 
-    def land(self):
-        self.air_time = 0
-        self.grounded = True
+    def atterrissage(self):
+        self.air_temps = 0
+        self.atterri = True
 
 
 class Camera(Entity):
-    def __init__(self, **kwargs):
+    """
+    Camera basic avec une limite max et min sur le zoom
+    """
+
+    def __init__(self):
         camera.editor_position = camera.position
         super().__init__(name='camera', eternal=True)
 
@@ -161,15 +179,13 @@ class Camera(Entity):
         self.max_zoom = 100
         self.min_zoom = 20
 
-        for key, value in kwargs.items():
-            setattr(self, key, value)
-
         self.start_position = self.position
         self.perspective_fov = camera.fov
         self.on_destroy = self.on_disable
         self.hotkeys = {'focus': 'f', 'reset_center': 'shift+f'}
 
     def on_enable(self):
+        # fonction pour utiliser la 3d
         camera.org_parent = camera.parent
         camera.org_position = camera.position
         camera.org_rotation = camera.rotation
@@ -179,6 +195,7 @@ class Camera(Entity):
         self.target_z = camera.z
 
     def on_disable(self):
+        # fonction pour utiliser la 2d
         camera.editor_position = camera.position
         camera.parent = camera.org_parent
         camera.position = camera.org_position
@@ -187,6 +204,7 @@ class Camera(Entity):
     def input(self, key):
         combined_key = ''.join(
             e+'+' for e in ('control', 'shift', 'alt') if held_keys[e] and not e == key) + key
+
         if combined_key == self.hotkeys['reset_center']:
             self.animate_position(self.start_position,
                                   duration=.1, curve=curve.linear)
@@ -246,6 +264,9 @@ class Camera(Entity):
 
 
 class Material():
+    """
+    Regroupement de classes qui sont utiliser comme materiel
+    """
     class Concrete(Entity):
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
@@ -287,41 +308,46 @@ class Material():
 
 
 class Sound(Audio):
+    """
+    Gère les sons du jeu
+    """
+
     def __init__(self):
-        self.mute = False
+        self.muet = False
         self.__music_start = Audio('music_start', autoplay=False, loop=True)
         self.__music_gameplay = Audio(
             'music_gameplay', autoplay=False, loop=True)
-        self.__last_played = None
+        self.dernier_joué = None
 
     def play_music(self, music):
         for e in [self.__music_start, self.__music_gameplay]:
             if e.playing == True:
                 Sound.pause(e)
-        if not self.mute and self.__last_played != music:
+        if not self.muet and self.dernier_joué != music:
             if music == 'start':
                 Sound.play(self.__music_start)
-                self.__last_played = 'start'
+                self.dernier_joué = 'start'
             if music == 'gameplay':
                 Sound.play(self.__music_gameplay)
-                self.__last_played = 'gameplay'
+                self.dernier_joué = 'gameplay'
         else:
-            self.set_unmute()
+            self.set_unmuet()
 
-    def set_mute(self):
-        self.mute = True
+    def set_muet(self):
+        self.muet = True
         for e in [self.__music_start, self.__music_gameplay]:
             if e.playing == True:
                 Sound.pause(e)
 
-    def set_unmute(self):
-        self.mute = False
-        if self.__last_played == 'start':
+    def set_unmuet(self):
+        # reactive le dernier son
+        self.muet = False
+        if self.dernier_joué == 'start':
             Sound.resume(self.__music_start)
-            self.__last_played = 'start'
-        if self.__last_played == 'gameplay':
+            self.dernier_joué = 'start'
+        if self.dernier_joué == 'gameplay':
             Sound.resume(self.__music_gameplay)
-            self.__last_played = 'gameplay'
+            self.dernier_joué = 'gameplay'
 
 
 class Jeu():
@@ -347,20 +373,20 @@ class Jeu():
                               x=-.33, y=.024, scale=(.325, .1, 1))
         quit_button = Button(parent=camera.ui, model='cube',
                              x=.33, y=.024, scale=(.325, .1, 1))
-        mute_button = Button(parent=camera.ui, model='quad', scale_x=.095, scale_y=.095, x=-.825,
+        muet_button = Button(parent=camera.ui, model='quad', scale_x=.095, scale_y=.095, x=-.825,
                              y=-.44)
-        mute_button.on_click = self.mute
+        muet_button.on_click = self.muet
         start_button.on_click = self.start_game
         quit_button.on_clic = application.quit
         [self.active_scene.append(x) for x in [
-            lemmings_start, start_button, quit_button, mute_button, self.strike]]
+            lemmings_start, start_button, quit_button, muet_button, self.strike]]
 
-    def mute(self):
-        if not self.music.mute:
-            self.music.set_mute()
+    def muet(self):
+        if not self.music.muet:
+            self.music.set_muet()
             self.strike.enabled = True
         else:
-            self.music.set_unmute()
+            self.music.set_unmuet()
             self.strike.enabled = False
 
     def start_game(self):
@@ -376,22 +402,8 @@ class Jeu():
             help_tip, sky]]
 
         if self.level == 0:
-            self.lemmings_cap += 5
-
-            ground = Material.Concrete(y=-3, scale=(30, 1, 10))
-            wall = Entity(model='cube', color=color.azure, origin=(-.5, .5),
-                          scale=(5, 10), x=10, y=.5, collider='box')
-            wall_2 = duplicate(wall, x=-10)
-            ceiling = Entity(model='cube', color=color.white33,
-                             origin_y=-.5, scale=(1, 1, 1), y=1, collider='box')
-            win_block = Material.Win_block(scale=(20, 1, 10))
-            [self.active_scene.append(x) for x in [
-                ground, wall, wall_2, ceiling, win_block]]
-
-            self.addlemming()
-
-        if self.level == 1:
             self.lemmings_cap += 7
+            self.addlemming()
             lvl = [
                 Material.Concrete(scale=(1, 3), position=(-.5, 1.5)),
                 Material.Concrete(scale=(4, 1), position=(1, -.5)),
@@ -411,7 +423,7 @@ class Jeu():
             ]
             [self.active_scene.append(x) for x in lvl]
 
-        if self.level == 2:
+        if self.level == 1:
             self.lemmings_cap += 15
             lvl = [
                 Material.Concrete(scale=(5, 1), position=(0, -2)),
@@ -432,7 +444,7 @@ class Jeu():
             ]
             [self.active_scene.append(x) for x in lvl]
 
-        if self.level == 3:
+        if self.level == 2:
             destroy(help_tip)
             Camera.disable(self.camera)
             lvl = [
@@ -459,8 +471,7 @@ class Jeu():
             [self.active_scene.append(x) for x in lvl]
 
     def addlemming(self, position=(0, 0, 0)):
-        gamespeed = self.gamespeed
-        self.lemmings.append(Lemming(gamespeed, position=position))
+        self.lemmings.append(Lemming(position=position))
 
     def removelemming(self, lemming):
         lemming.enabled = False
@@ -489,7 +500,7 @@ help_panel = WindowPanel(
                 use keys "0" to "9"\n 
                 to change walking speed of lemming(s) \n\n 
                 use "space"\n 
-                to make the lemming(s) jump\n\n
+                to make the lemming(s) saut\n\n
                 use mouse to navigate\n\n
                 use "shift"+"f" to recenter camera'''),
     ),
@@ -499,32 +510,23 @@ help_panel = WindowPanel(
 
 
 def input(key, help_panel=help_panel):
-    try:
-        if len(Jeu_.lemmings) > 0:
-            if key == '+' and len(Jeu_.lemmings) < Jeu_.lemmings_cap:
-                Jeu_.addlemming()
+    if len(Jeu_.lemmings) > 0:
+        if key == '+' and len(Jeu_.lemmings) < Jeu_.lemmings_cap:
+            Jeu_.addlemming()
 
-            if key in [str(x) for x in range(10)]:
-                Jeu_.gamespeed = int(key)
-                for e in Jeu_.lemmings:
-                    e.vitesse = Jeu_.gamespeed
+        if key == 'space':
+            for e in Jeu_.lemmings:
+                e.saut()
 
-            if key == 'space':
-                for e in Jeu_.lemmings:
-                    e.jump()
+        if held_keys['tab']:
+            help_panel.enabled = True
+        else:
+            help_panel.enabled = False
 
-            if held_keys['tab']:
-                help_panel.enabled = True
-            else:
-                help_panel.enabled = False
+        if key == Keys.escape:
+            Jeu_.start_menu()
 
-            if key == Keys.escape:
-                Jeu_.start_menu()
-
-            print(key)
-
-    except:
-        print('input error')
+        print(key)
 
 
 def main():
