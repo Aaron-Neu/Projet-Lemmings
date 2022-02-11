@@ -20,7 +20,7 @@ window.icon = 'icon.ico'
 
 
 class Lemming(Entity):
-    def __init__(self, gamespeed=1, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__()
 
         self.model = 'lemming_model'
@@ -32,36 +32,37 @@ class Lemming(Entity):
         self.color = color.white
         self.texture = 'walk.mov'
 
-        self.walk_speed = gamespeed
-        self.velocity = 1
+        self.vitesse = 1
+        self.sens_mouvement = 1  # gauche = -1 droite = 1
 
-        self.jump_height = 2
-        self.jump_duration = .5
-        self.jumping = False
+        self.saut_hauteur = 2
+        self.saut_duration = .5
+        self.sauter = False
 
         self.gravity = 1
         self.grounded = True
         self.air_time = 0
-        self.traverse_target = scene
+        scene = scene
         self._start_fall_sequence = None
 
+        # Verifie si un objet obstrut le lemming et modifie sa position
         ray_up = boxcast(self.world_position, self.down, distance=10, ignore=(
-            self, ), traverse_target=self.traverse_target, thickness=.9)
+            self, ), traverse_target=scene, thickness=.9)
         if ray_up.hit:
             self.y = ray_up.world_point[1] - 1
 
         ray_down = boxcast(self.world_position, self.up, distance=10, ignore=(
-            self, ), traverse_target=self.traverse_target, thickness=.9)
+            self, ), traverse_target=scene, thickness=.9)
         if ray_down.hit:
             self.y = ray_down.world_point[1] + 1
 
         ray_right = boxcast(self.world_position, self.right, distance=10, ignore=(
-            self, ), traverse_target=self.traverse_target, thickness=.9)
+            self, ), traverse_target=scene, thickness=.9)
         if ray_right.hit:
             self.x = ray_right.world_point[0] - 1
 
         ray_left = boxcast(self.world_position, self.left, distance=10, ignore=(
-            self, ), traverse_target=self.traverse_target, thickness=.9)
+            self, ), traverse_target=scene, thickness=.9)
         if ray_left.hit:
             self.x = ray_left.world_point[0] + 1
 
@@ -71,26 +72,26 @@ class Lemming(Entity):
 
     def update(self):
         hit_info = boxcast(
-            self.position+Vec3(self.velocity * time.dt *
-                               self.walk_speed, self.scale_y/2, 0),
-            direction=Vec3(self.velocity, 0, 0),
+            self.position+Vec3(self.sens_mouvement * time.dt *
+                               self.vitesse, self.scale_y/2, 0),
+            direction=Vec3(self.sens_mouvement, 0, 0),
             distance=abs(self.scale_x/2),
             ignore=(self, ),
-            traverse_target=self.traverse_target,
+            traverse_target=scene,
             thickness=(self.scale_x*.9, self.scale_y*.9),
         )
         if hit_info.hit == False or hit_info.entity in Jeu_.lemmings:
-            self.x += self.velocity * time.dt * self.walk_speed
+            self.x += self.sens_mouvement * time.dt * self.vitesse
         else:
-            self.velocity *= -1
-            self.look_at((self.x, self.y, self.velocity))
+            self.sens_mouvement *= -1
+            self.look_at((self.x, self.y, self.sens_mouvement))
 
         ray = boxcast(
             self.world_position+Vec3(0, .1, 0),
             self.down,
             distance=max(.1, self.air_time * self.gravity),
             ignore=(self, ),
-            traverse_target=self.traverse_target,
+            traverse_target=scene,
             thickness=self.scale_x*.9
         )
         if ray.hit:
@@ -102,44 +103,44 @@ class Lemming(Entity):
         else:
             self.grounded = False
 
-        if not self.grounded and not self.jumping:
+        if not self.grounded and not self.sauter:
             self.y -= min(self.air_time * self.gravity, ray.distance-.1)
             self.air_time += time.dt*4 * self.gravity
-        if self.jumping:
-            if boxcast(self.position+(0, .1, 0), self.up, distance=self.scale_y, thickness=.95, ignore=(self,), traverse_target=self.traverse_target).hit:
+        if self.sauter:
+            if boxcast(self.position+(0, .1, 0), self.up, distance=self.scale_y,
+                       thickness=.95, ignore=(self,), traverse_target=scene).hit:
                 self.y_animator.kill()
                 self.air_time = 0
                 self.start_fall()
 
     def jump(self):
+        # Situation ou le saut est impossible
         if not self.grounded:
             return
         if self._start_fall_sequence:
             self._start_fall_sequence.kill()
-        if boxcast(self.position+(0, .1, 0), self.up, distance=self.scale_y, thickness=.95, ignore=(self,), traverse_target=self.traverse_target).hit:
+        if boxcast(self.position+(0, .1, 0), self.up, distance=self.scale_y, thickness=.95,
+                   ignore=(self,), traverse_target=scene).hit:
             return
 
-        self.jumping = True
+        self.sauter = True
         self.grounded = False
-        target_y = self.y + self.jump_height
-        duration = self.jump_duration
+        target_y = self.y + self.saut_hauteur
+        duration = self.saut_duration
 
         hit_above = boxcast(self.position+(0, self.scale_y/2, 0), self.up,
-                            distance=self.jump_height-(self.scale_y/2), thickness=.9, ignore=(self,))
+                            distance=self.saut_hauteur-(self.scale_y/2), thickness=.9, ignore=(self,))
 
         if hit_above.hit:
             target_y = min(hit_above.world_point.y-self.scale_y, target_y)
-            try:
-                duration *= target_y / (self.y+self.jump_height)
-            except ZeroDivisionError as e:
-                return e
+            duration *= target_y / (self.y+self.saut_hauteur) + .0000001
 
         self.animate_y(target_y, duration, resolution=30, curve=curve.out_expo)
         self._start_fall_sequence = invoke(self.start_fall, delay=duration)
 
     def start_fall(self):
         self.y_animator.pause()
-        self.jumping = False
+        self.sauter = False
 
     def land(self):
         self.air_time = 0
@@ -329,7 +330,6 @@ class Jeu():
         self.active_scene = []
         self.lemmings = []
         self.lemmings_cap = 0
-        self.gamespeed = 1
         self.level = 0
         self.camera = Camera()
         self.strike = Entity(model='cube', texture='mute', scale_x=.75, scale_y=.75,
@@ -376,7 +376,7 @@ class Jeu():
             help_tip, sky]]
 
         if self.level == 0:
-            self.lemmings_cap+=5
+            self.lemmings_cap += 5
 
             ground = Material.Concrete(y=-3, scale=(30, 1, 10))
             wall = Entity(model='cube', color=color.azure, origin=(-.5, .5),
@@ -390,8 +390,8 @@ class Jeu():
 
             self.addlemming()
 
-        if self.level ==1:
-            self.lemmings_cap+=7
+        if self.level == 1:
+            self.lemmings_cap += 7
             lvl = [
                 Material.Concrete(scale=(1, 3), position=(-.5, 1.5)),
                 Material.Concrete(scale=(4, 1), position=(1, -.5)),
@@ -410,10 +410,10 @@ class Jeu():
                 Material.Concrete(scale=(2, 1), position=(10, 1.5))
             ]
             [self.active_scene.append(x) for x in lvl]
-        
-        if self.level==2 :
-             self.lemmings_cap+=15
-             lvl = [
+
+        if self.level == 2:
+            self.lemmings_cap += 15
+            lvl = [
                 Material.Concrete(scale=(5, 1), position=(0, -2)),
                 Material.Concrete(scale=(1, 3), position=(3, -2)),
                 Material.Concrete(scale=(1, 2), position=(-3, -1.5)),
@@ -429,14 +429,14 @@ class Jeu():
                 Material.Concrete(scale=(1, 1), position=(9, -6)),
                 Material.Concrete(scale=(1, 1), position=(10, -5)),
                 Material.Win_block(scale=(3, 1), position=(12, -50)),
-             ]
-             [self.active_scene.append(x) for x in lvl]
+            ]
+            [self.active_scene.append(x) for x in lvl]
 
         if self.level == 3:
             destroy(help_tip)
             Camera.disable(self.camera)
             lvl = [
-                Entity(model='quad',scale=(100,100,),color=color.red),
+                Entity(model='quad', scale=(100, 100,), color=color.red),
                 Text('''
                 You win!
                 -------------------------------------
@@ -453,9 +453,9 @@ class Jeu():
                 Concrete wall texture - texturepalace.com | CC 4.0
                 -------------------------------------
                 press "escape" to exit to main menu
-                ''',background=True,x=-.7,y=.3)
+                ''', background=True, x=-.7, y=.3)
             ]
-            
+
             [self.active_scene.append(x) for x in lvl]
 
     def addlemming(self, position=(0, 0, 0)):
@@ -474,7 +474,7 @@ class Jeu():
     def game_over(self):
         Camera.disable(self.camera)
         game_over_screen = [
-            Entity(model = 'quad',scale = (100,100,1),color = color.black,z=-3),
+            Entity(model='quad', scale=(100, 100, 1), color=color.black, z=-3),
             Text('''You lost!,\n\n press "escape"''')
         ]
         [self.active_scene.append(x) for x in game_over_screen]
@@ -507,7 +507,7 @@ def input(key, help_panel=help_panel):
             if key in [str(x) for x in range(10)]:
                 Jeu_.gamespeed = int(key)
                 for e in Jeu_.lemmings:
-                    e.walk_speed = Jeu_.gamespeed
+                    e.vitesse = Jeu_.gamespeed
 
             if key == 'space':
                 for e in Jeu_.lemmings:
@@ -517,7 +517,7 @@ def input(key, help_panel=help_panel):
                 help_panel.enabled = True
             else:
                 help_panel.enabled = False
-            
+
             if key == Keys.escape:
                 Jeu_.start_menu()
 
