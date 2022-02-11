@@ -1,0 +1,11 @@
+Created by Dyami Neu and Andy How
+This work is marked with CC0 1.0 Universal.
+
+Built in Python with the Ursina engine.
+-----------assets credited-----------
+Anji bamboo forest (title screen) - Clerkwheel (modified) | CC 3.0
+Golden.ttf (title font) - imagex | CC 3.0
+Pixel.ttf (CC font) - Markus Schröppel | CC 3.0
+Mao zedong propaganda music Trap remix (title screen music) - Vosi
+Without the Communist Party, There Would Be No New China (gameplay music) - Communist Party of China
+Concrete wall texture - texturepalace.com | CC 4.0
