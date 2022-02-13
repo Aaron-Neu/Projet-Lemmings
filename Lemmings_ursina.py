@@ -98,6 +98,8 @@ class Lemming(Entity):
         else:
             self.sens_mouvement *= -1
             self.look_at((self.x, self.y, self.sens_mouvement))
+            self.y += .1
+            self.x -= .01
 
         # vérifie si le lemming a atterrie
         ray = boxcast(
@@ -164,19 +166,17 @@ class Lemming(Entity):
 
     def précipité(self):
         if self.précipité_refroidir:
-            print('refroidir')
             return
         if boxcast(self.position+(0, self.scale_y/2, 0), self.forward,
                    distance=self.scale_y*self.vitesse+self.précipité_duration, thickness=.1,
                    ignore=(self,), traverse_target=scene).hit:
-            print('box')
             return
 
         self.précipité_refroidir = True
         target_x = self.x + self.vitesse * self.sens_mouvement
         duration = self.précipité_duration
 
-        self.animate_x(target_x, duration, curve=curve.in_out_elastic)
+        self.animate_x(target_x, duration, curve=curve.linear)
         invoke(self.précipité_a_zero, delay=2)
 
     def précipité_a_zero(self):
@@ -287,7 +287,8 @@ class Camera(Entity):
                 mouse.velocity[1] * self.pan_speed[1] * zoom_compensation
 
         if self.focus:
-            self.position = Jeu_.lemmings_actif[-1].position
+            if len(Jeu_.lemmings_actif)>0:
+                self.position = Jeu_.lemmings_actif[-1].position
         camera.z = lerp(camera.z, self.target_z, time.dt*self.zoom_smoothing)
 
 
@@ -411,6 +412,7 @@ class Niveaux():
             self.enabled = True
             self.double_sided = True
             self.color = color.yellow
+            self.__dict__.update(kwargs)
 
         def update(self):
             ray = boxcast(origin=self.world_position, thickness=self.scale)
@@ -470,6 +472,7 @@ class Jeu():
 
         self.scene_active = []
         self.num_niveaux = 0
+        self.vue_menu = True
 
         self.lemmings = {}
         self.lemmings_actif = []
@@ -506,6 +509,7 @@ class Jeu():
             self.croix_muet.enabled = False
 
     def jeu(self):
+        self.vue_menu = False
         [destroy(self.scene_active.pop())
          for _ in range(len(self.scene_active))]
 
@@ -520,9 +524,8 @@ class Jeu():
 
         if self.num_niveaux == 0:
             self.lemmings_cap += 7
-            self.addlemming()
-            self.niveaux.generer_niveau(0)
-            lvl = []
+            lvl = self.niveaux.generer_niveau(0)
+            lvl.append(self.niveaux.Win_block(position=(57.5,-22,)))
             [self.scene_active.append(x) for x in lvl]
 
         if self.num_niveaux == 1:
@@ -547,7 +550,8 @@ class Jeu():
 
     def addlemming(self, position=(0, 0, 0)):
         # ajoute un lemming a la position position
-        if len(self.lemmings) > self.lemmings_cap:
+        if len(self.lemmings_actif) > self.lemmings_cap:
+            Text("vous ne pouvez plus ajoutes de lemming, si vous etre bloquer, recomencer avec 'escape'")
             return
 
         lemming_nom = 'lemming-'+str(len(self.lemmings)+1)
@@ -605,7 +609,7 @@ panneau_aide = WindowPanel(
 
 
 def input(key, help_panel=panneau_aide):
-    if len(Jeu_.lemmings) > 0:
+    if not Jeu_.vue_menu:
         if key == '+' and len(Jeu_.lemmings) < Jeu_.lemmings_cap:
             Jeu_.addlemming()
 
