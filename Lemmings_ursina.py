@@ -4,6 +4,7 @@ Auteurs : Dyami Neu et Andy How
 Projet Lemming en 3d
 
 Ce projet est un jeu en 3d qui utilise la librairie Ursina.
+Documentation: https://www.ursinaengine.org/documentation.html
 Toutes licenses associes sont mentionnes dans le fichier texte 'credit.txt'
 """
 from random import randint
@@ -31,25 +32,25 @@ class Lemming(Entity):
     def __init__(self, **kwargs):
         super().__init__()
 
-        taille_hasard = randint(1, 3)
+        nb_hasard = randint(1, 3)
 
         self.model = 'lemming_model'
         self.origin_y = -.15
-        self.origin_z = taille_hasard*.01
-        self.scale_y = taille_hasard*.16
+        self.origin_z = nb_hasard*.01
+        self.scale_y = nb_hasard*.16
         self.scale_z = randint(1, 2)*.1
-        self.scale_x = taille_hasard*.12
+        self.scale_x = nb_hasard*.12
         self.collider = 'lemming_model'
         self.color = color.white
         self.texture = 'walk.mov'
 
         self.__dict__.update(kwargs)
 
-        self.vitesse = 5
+        self.vitesse = 5-nb_hasard
         self.sens_mouvement = 1  # gauche = -1 droite = 1
 
-        self.saut_hauteur = 1+taille_hasard*.16*3
-        self.saut_duration = taille_hasard*.12*1.5
+        self.saut_hauteur = 1+nb_hasard*.16*3
+        self.saut_duration = nb_hasard*.12*1.5
         self.sauter = False
 
         self.atterri = True
@@ -77,7 +78,7 @@ class Lemming(Entity):
         if ray_left.hit:
             self.x = ray_left.world_point[0] + 1
 
-        self.gravité = 1+.01*taille_hasard
+        self.gravité = .5
 
     def update(self):
         # vérifie si le lemming touche un objet
@@ -304,8 +305,9 @@ class Niveaux():
         for y in range(texture_niveau.height):
             for x in range(texture_niveau.width):
                 if texture_niveau.get_pixel(x, y) == color.black:
-                    niveau_cadre.append(Entity(model='cube', collider='box',  position=(
-                        x, y, 1), origin=(10, texture_niveau.height, 1),color=color.random_color()))
+                    niveau_cadre.append(Entity(model='cube', collider='box',  
+                    position=(x, y,), origin=(10, texture_niveau.height,), scale_z = 2,
+                    color=color.random_color()))
         return niveau_cadre
 
     class Death_block(Entity):
