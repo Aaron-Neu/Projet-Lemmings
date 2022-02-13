@@ -9,6 +9,12 @@ Golden.ttf (title font) - imagex | CC 3.0
 Pixel.ttf (CC font) - Markus Schröppel | CC 3.0
 Mao zedong propaganda music Trap remix (title screen music) - Vosi
 Without the Communist Party, There Would Be No New China (gameplay music) - Communist Party of China
-Concrete wall texture - texturepalace.com | CC 4.0
+Concrete - texturepalace.com | CC 4.0
+"Bamboo Forest" - filmmaker in japan | CC BY-NC-ND 2.0
+"Grey stone wall texture (corrected, not tilable)" - qubodup | CC BY 2.0
+"Bamboo" - Andy H McDowall | CC BY-NC 2.0
+"Bamboo Texture" - planetoftheweb | CC BY 2.0
+"iPhone Bamboo" - robmcm | CC BY-SA 2.0
+"Bamboo color" - NiteLynx | CC BY-NC-SA 2.0
 -------------------------------------
 appuyez sur "escape" pour quitter au menu principal

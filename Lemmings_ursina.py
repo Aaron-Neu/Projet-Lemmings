@@ -8,7 +8,6 @@ Documentation: https://www.ursinaengine.org/documentation.html
 Toutes licenses associes sont mentionnes dans le fichier texte 'credit.txt'
 """
 from random import randint
-from turtle import pos, position
 from ursina import curve
 from ursina import *
 
@@ -36,7 +35,7 @@ class Lemming(Entity):
 
         self.model = 'lemming_model'
         self.origin_y = -.15
-        self.origin_z = nb_hasard*.01
+        self.origin_z = 1+2*randint(-1, 1)
         self.scale_y = nb_hasard*.16
         self.scale_z = randint(1, 2)*.1
         self.scale_x = nb_hasard*.12
@@ -52,7 +51,9 @@ class Lemming(Entity):
         self.saut_hauteur = 1+nb_hasard*.16*3
         self.saut_duration = nb_hasard*.12*1.5
         self.sauter = False
+
         self.précipité_duration = nb_hasard*.17
+        self.précipité_refroidir = False
 
         self.atterri = True
         self.air_temps = 0
@@ -162,16 +163,24 @@ class Lemming(Entity):
         self.atterri = True
 
     def précipité(self):
-        if self.sauter:
+        if self.précipité_refroidir:
+            print('refroidir')
             return
-        if boxcast(self.position+(0, .1, 0), (self.sens_mouvement, 0, 0), distance=self.scale_y*self.vitesse, thickness=.95,
+        if boxcast(self.position+(0, self.scale_y/2, 0), self.forward,
+                   distance=self.scale_y*self.vitesse+self.précipité_duration, thickness=.1,
                    ignore=(self,), traverse_target=scene).hit:
+            print('box')
             return
 
+        self.précipité_refroidir = True
         target_x = self.x + self.vitesse * self.sens_mouvement
         duration = self.précipité_duration
 
-        self.animate_x(target_x, duration, curve=curve.in_out_expo)
+        self.animate_x(target_x, duration, curve=curve.in_out_elastic)
+        invoke(self.précipité_a_zero, delay=2)
+
+    def précipité_a_zero(self):
+        self.précipité_refroidir = False
 
 
 class Camera(Entity):
@@ -196,6 +205,7 @@ class Camera(Entity):
         self.start_position = self.position
         self.perspective_fov = camera.fov
         self.on_destroy = self.on_disable
+        self.focus = True
         self.hotkeys = {'focus': 'f', 'reset_center': 'shift+f'}
 
     def on_enable(self):
@@ -223,9 +233,11 @@ class Camera(Entity):
             self.animate_position(self.start_position,
                                   duration=.1, curve=curve.linear)
 
-        elif combined_key == self.hotkeys['focus'] and mouse.world_point:
-            self.animate_position(
-                mouse.world_point, duration=.1, curve=curve.linear)
+        elif combined_key == self.hotkeys['focus'] and self.focus:
+            self.focus = False
+
+        elif combined_key == self.hotkeys['focus'] and not self.focus:
+            self.focus = True
 
         elif key == 'scroll up' and abs(self.target_z) > self.min_zoom:
             target_position = self.world_position
@@ -274,6 +286,8 @@ class Camera(Entity):
             self.position -= camera.up * \
                 mouse.velocity[1] * self.pan_speed[1] * zoom_compensation
 
+        if self.focus:
+            self.position = Jeu_.lemmings_actif[-1].position
         camera.z = lerp(camera.z, self.target_z, time.dt*self.zoom_smoothing)
 
 
@@ -292,6 +306,9 @@ class Niveaux():
         self.niveau06 = load_texture('niveau06')
         self.niveau07 = load_texture('niveau07')
         self.niveau08 = load_texture('niveau08')
+        self.thème = {
+            'bambou': ['grey_stone', ['Bamboo_Texture', 'Bamboo'], ['Bamboo_color', 'Iphone_Bamboo'], 'Bamboo_Forest'],
+        }
 
     def generer_niveau(self, num):
         if num == 1:
@@ -311,20 +328,39 @@ class Niveaux():
         elif num == 8:
             return self.créer_niveau(self.niveau08)
         else:
-            return self.créer_niveau(self.niveau00)
+            return self.créer_niveau(self.niveau00, self.thème['bambou'])
 
-    def créer_niveau(self, texture_niveau, fond='concrete'):
+    def créer_niveau(self, texture_niveau, thème=['erreur', ['erreur'], ['erreur'], 'erreur']):
         # creation d'un niveau a partir d'une image
+        bornes = thème[0]
+        principale = thème[1]
+        secondaire = thème[2]
+        fond = thème[3]
+
         décalage = 10
-        couleur_encadrement = color.rgb(25, 76, 34, 130)
+        couleur_encadrement = color.rgb(252, 234, 196)
         niveau_cadre = [Entity(enabled=False, position=(-1, -1, -1))]
         for y in range(texture_niveau.height):
             for x in range(texture_niveau.width):
-                if texture_niveau.get_pixel(x, y) == color.black:
+                if texture_niveau.get_pixel(x, y) == color.rgb(0, 0, 0):
+                    niveau_cadre.append(Entity(model='cube', collider='box',
+                                               position=(x, y,), origin=(
+                                                   décalage, texture_niveau.height,), scale_z=3,
+                                               texture=bornes))
+                elif texture_niveau.get_pixel(x, y) == color.rgb(100, 100, 100):
                     niveau_cadre.append(Entity(model='cube', collider='box',
                                                position=(x, y,), origin=(
                                                    décalage, texture_niveau.height,), scale_z=2,
-                                               color=color.random_color()))
+                                               texture=principale[randint(0, len(principale))-1]))
+                elif texture_niveau.get_pixel(x, y) == color.rgb(150, 150, 150):
+                    niveau_cadre.append(Entity(model='cube', collider='box',
+                                               position=(x, y, -.9), origin=(
+                                                   décalage, texture_niveau.height,), scale_z=.2,
+                                               texture=secondaire[randint(0, len(secondaire)-1)]))
+                    niveau_cadre.append(Entity(model='cube', collider='box',
+                                               position=(x, y, .9), origin=(
+                                                   décalage, texture_niveau.height,), scale_z=.2,
+                                               texture=secondaire[randint(0, len(secondaire)-1)]))
 
         niveau_cadre.append(Entity(model='plane', color=color.white,
                                    scale=(1000, 1, 1000), rotation=(180),
@@ -333,6 +369,10 @@ class Niveaux():
                                    scale=(texture_niveau.width,
                                           texture_niveau.height+2, 1),
                                    position=((texture_niveau.width-2*décalage)/2, -(texture_niveau.height)/2-.5, 5)))
+        niveau_cadre.append(Entity(model='cube', color=color.rgb(15, 243, 60, 20),
+                                   scale=(texture_niveau.width,
+                                          texture_niveau.height+2, 1),
+                                   position=((texture_niveau.width-2*décalage)/2, -(texture_niveau.height)/2-.5, -5)))
         niveau_cadre.append(Entity(model='cube', color=couleur_encadrement,
                                    scale=(texture_niveau.width, 1, 10),
                                    position=((texture_niveau.width-2*décalage)/2, -texture_niveau.height-1)))
@@ -584,8 +624,6 @@ def input(key, help_panel=panneau_aide):
 
         if key == Keys.escape:
             Jeu_.demarer()
-
-        print(key)
 
 
 def main():
