@@ -52,6 +52,7 @@ class Lemming(Entity):
         self.saut_hauteur = 1+nb_hasard*.16*3
         self.saut_duration = nb_hasard*.12*1.5
         self.sauter = False
+        self.précipité_duration = nb_hasard*.17
 
         self.atterri = True
         self.air_temps = 0
@@ -159,6 +160,18 @@ class Lemming(Entity):
     def atterrissage(self):
         self.air_temps = 0
         self.atterri = True
+    
+    def précipité(self):
+        if self.sauter:
+            return
+        if boxcast(self.position+(0, .1, 0), (self.sens_mouvement,0,0), distance=self.scale_y*self.vitesse, thickness=.95,
+                   ignore=(self,), traverse_target=scene).hit:
+            return
+        
+        target_x = self.x + self.vitesse
+        duration = self.précipité_duration
+
+        self.animate_x(target_x, duration, curve=curve.in_out_expo)
 
 
 class Camera(Entity):
@@ -300,7 +313,7 @@ class Niveaux():
         else:
             return self.créer_niveau(self.niveau00)
 
-    def créer_niveau(self, texture_niveau):
+    def créer_niveau(self, texture_niveau, fond='concrete'):
         # creation d'un niveau a partir d'une image
         décalage = 10
         couleur_encadrement = color.rgb(25, 76, 34, 130)
@@ -313,15 +326,25 @@ class Niveaux():
                                                    décalage, texture_niveau.height,), scale_z=2,
                                                color=color.random_color()))
 
+        niveau_cadre.append(Entity(model='plane', color=color.white,
+                                   scale=(1000, 1, 1000), rotation=(180),
+                                   position=(0, -(texture_niveau.height)-1.5, 5)))
+        niveau_cadre.append(Entity(model='cube', texture=fond,
+                                   scale=(texture_niveau.width,
+                                          texture_niveau.height+2, 1),
+                                   position=((texture_niveau.width-2*décalage)/2, -(texture_niveau.height)/2-.5, 5)))
         niveau_cadre.append(Entity(model='cube', color=couleur_encadrement,
                                    scale=(texture_niveau.width, 1, 10),
                                    position=((texture_niveau.width-2*décalage)/2, -texture_niveau.height-1)))
         niveau_cadre.append(Entity(model='cube', color=couleur_encadrement,
-                                   scale=(1, texture_niveau.height, 10),
-                                   position=(-décalage, -texture_niveau.height/2-1.5)))
+                                   scale=(texture_niveau.width, 1, 10),
+                                   position=((texture_niveau.width-2*décalage)/2, 0)))
         niveau_cadre.append(Entity(model='cube', color=couleur_encadrement,
-                                   scale=(1, texture_niveau.height, 10),
-                                   position=(texture_niveau.width-décalage, -texture_niveau.height/2-1.5)))
+                                   scale=(1, texture_niveau.height+2, 10),
+                                   position=(-décalage, -texture_niveau.height/2-.5)))
+        niveau_cadre.append(Entity(model='cube', color=couleur_encadrement,
+                                   scale=(1, texture_niveau.height+2, 10),
+                                   position=(texture_niveau.width-décalage, -texture_niveau.height/2-.5)))
         return niveau_cadre
 
     class Death_block(Entity):
@@ -448,7 +471,7 @@ class Jeu():
 
         Camera.enable(self.camera)
         help_tip = Text(
-            text="maintenez 'tab' pour obtenir de l'aide", origin=(0, 0), y=-.45)
+            text="maintenez 'tab' pour obtenir de l'aide", origin=(0, 0), y=-.45, color=color.black)
         sky = Sky()
         self.music.jouer_music('gameplay')
 
@@ -527,13 +550,13 @@ class Jeu():
 Jeu_ = Jeu()
 
 panneau_aide = WindowPanel(
+    position=(0, 0),
     title='Aide',
     content=(
-        Text('''utilisez "+" pour ajouter un lemming \n\n
-                 utiliser "espace" pour\n
-                 faire sauter le(s) lemming(s)\n\n
-                 utilisez la souris pour naviguer\n\n
-                 utilisez "shift" + "f" pour recentrer la caméra'''),
+        Text('utiliser "+" pour ajouter un lemming\n'),
+        Text('utiliser "espace" pour faire sauter\n le(s) lemming(s)'),
+        Text('utiliser la souris pour naviguer\n'),
+        Text('utiliser "shift" + "f" pour recentrer\n la caméra')
     ),
     popup=True,
     enabled=False
@@ -548,6 +571,10 @@ def input(key, help_panel=panneau_aide):
         if 'space' in key:
             for lemming in Jeu_.lemmings_actif:
                 lemming.saut()
+        
+        if 'shift' in key:
+            for lemming in Jeu_.lemmings_actif:
+                lemming.précipité()
 
         if held_keys['tab']:
             panneau_aide.enabled = True
