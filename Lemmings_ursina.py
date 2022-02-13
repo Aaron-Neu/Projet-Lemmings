@@ -7,6 +7,7 @@ Ce projet est un jeu en 3d qui utilise la librairie Ursina.
 Toutes licenses associes sont mentionnes dans le fichier texte 'credit.txt'
 """
 from random import randint
+from turtle import pos, position
 from ursina import curve
 from ursina import *
 
@@ -18,37 +19,39 @@ borderless = False
 forced_aspect_ratio = 1.778
 app = Ursina(fullscreen=fullscreen, development_mode=development_mode,
              title=title, borderless=borderless, forced_aspect_ratio=forced_aspect_ratio)
-window.fps_counter.enabled = False
+window.fps_counter.enabled = True
 window.icon = 'icon.ico'
 
 
 class Lemming(Entity):
     """
-    Objet lemming, controler par le joueur, on instacie cette classe pour creer un
+    Objet lemming, controler par le joueur, on instacie cette classe pour creer un lemming
     """
 
     def __init__(self, **kwargs):
         super().__init__()
 
+        taille_hasard = randint(1, 3)
+
         self.model = 'lemming_model'
         self.origin_y = -.15
-        self.scale_y = .4*randint(1, 3)*.4
-        self.scale_z = .2*randint(1, 3)*.4
-        self.scale_x = .4*randint(1, 3)*.4
+        self.origin_z = taille_hasard*.01
+        self.scale_y = taille_hasard*.16
+        self.scale_z = randint(1, 2)*.1
+        self.scale_x = taille_hasard*.12
         self.collider = 'lemming_model'
         self.color = color.white
         self.texture = 'walk.mov'
 
         self.__dict__.update(kwargs)
 
-        self.vitesse = 1
+        self.vitesse = 5
         self.sens_mouvement = 1  # gauche = -1 droite = 1
 
-        self.saut_hauteur = 2
-        self.saut_duration = .5
+        self.saut_hauteur = 1+taille_hasard*.16*3
+        self.saut_duration = taille_hasard*.12*1.5
         self.sauter = False
 
-        self.gravité = 1
         self.atterri = True
         self.air_temps = 0
         self._sequence_atterrissage = None
@@ -74,9 +77,7 @@ class Lemming(Entity):
         if ray_left.hit:
             self.x = ray_left.world_point[0] + 1
 
-        target_gravité = self.gravité
-        self.gravité = 0
-        invoke(setattr, self, 'gravité', target_gravité, delay=1/60)
+        self.gravité = 1+.01*taille_hasard
 
     def update(self):
         # vérifie si le lemming touche un objet
@@ -130,8 +131,6 @@ class Lemming(Entity):
         # situation ou le saut est impossible
         if not self.atterri:
             return
-        if self._sequence_atterrissage:
-            self._sequence_atterrissage.kill()
         if boxcast(self.position+(0, .1, 0), self.up, distance=self.scale_y, thickness=.95,
                    ignore=(self,), traverse_target=scene).hit:
             return
@@ -141,15 +140,15 @@ class Lemming(Entity):
         target_y = self.y + self.saut_hauteur
         duration = self.saut_duration
 
-        hit_above = boxcast(self.position+(0, self.scale_y/2, 0), self.up,
-                            distance=self.saut_hauteur-(self.scale_y/2), thickness=.9, ignore=(self,))
+        hit_dessus = boxcast(self.position+(0, self.scale_y/2, 0), self.up,
+                             distance=self.saut_hauteur-(self.scale_y/2), thickness=.9, ignore=(self,))
 
-        if hit_above.hit:
-            target_y = min(hit_above.world_point.y-self.scale_y, target_y)
-            duration *= target_y / (self.y+self.saut_hauteur) + .0000001
+        if hit_dessus.hit:
+            target_y = min(hit_dessus.world_point.y-self.scale_y, target_y)
+            duration *= target_y / (self.y+self.saut_hauteur)
 
         # séquence de saut
-        self.animate_y(target_y, duration, resolution=30, curve=curve.out_expo)
+        self.animate_y(target_y, duration, curve=curve.out_expo)
         self._sequence_atterrissage = invoke(self.tombe, delay=duration)
 
     def tombe(self):
@@ -164,6 +163,7 @@ class Lemming(Entity):
 class Camera(Entity):
     """
     Camera basic avec une limite max et min sur le zoom
+    inspire par: https://github.com/pokepetter/ursina/blob/master/ursina/prefabs/editor_camera.py
     """
 
     def __init__(self):
@@ -263,32 +263,64 @@ class Camera(Entity):
         camera.z = lerp(camera.z, self.target_z, time.dt*self.zoom_smoothing)
 
 
-class Material():
+class Niveaux():
     """
-    Regroupement de classes qui sont utiliser comme materiel
+    Regroupement de classes qui sont utiliser pour construire les niveaux
     """
-    class Concrete(Entity):
-        def __init__(self, **kwargs):
-            super().__init__(**kwargs)
-            self.model = 'cube'
-            self.collider = 'box'
-            self.enabled = True
-            self.texture = 'concrete'
-            self.origin = (0, 0, 0)
+
+    def __init__(self):
+        self.niveau00 = load_texture('niveau00')
+        self.niveau01 = load_texture('niveau01')
+        self.niveau02 = load_texture('niveau02')
+        self.niveau03 = load_texture('niveau03')
+        self.niveau04 = load_texture('niveau04')
+        self.niveau05 = load_texture('niveau05')
+        self.niveau06 = load_texture('niveau06')
+        self.niveau07 = load_texture('niveau07')
+        self.niveau08 = load_texture('niveau08')
+
+    def generer_niveau(self, num):
+        if num == 1:
+            return self.créer_niveau(self.niveau01)
+        elif num == 2:
+            return self.créer_niveau(self.niveau02)
+        elif num == 3:
+            return self.créer_niveau(self.niveau03)
+        elif num == 4:
+            return self.créer_niveau(self.niveau04)
+        elif num == 5:
+            return self.créer_niveau(self.niveau05)
+        elif num == 6:
+            return self.créer_niveau(self.niveau06)
+        elif num == 7:
+            return self.créer_niveau(self.niveau07)
+        elif num == 8:
+            return self.créer_niveau(self.niveau08)
+        else:
+            return self.créer_niveau(self.niveau00)
+
+    def créer_niveau(self, texture_niveau):
+        niveau_cadre = [Entity(enabled=False,position=(-1,-1,-1))]
+        for y in range(texture_niveau.height):
+            for x in range(texture_niveau.width):
+                if texture_niveau.get_pixel(x, y) == color.black:
+                    niveau_cadre.append(Entity(model='cube', collider='box',  position=(
+                        x, y, 1), origin=(10, texture_niveau.height, 1),color=color.random_color()))
+        return niveau_cadre
 
     class Death_block(Entity):
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
-            self.name = 'Death_block'
             self.model = 'cube'
             self.collider = 'box'
             self.enabled = True
             self.double_sided = True
             self.color = color.red
+            self.__dict__.update(kwargs)
 
         def update(self):
             ray = boxcast(origin=self.world_position, thickness=self.scale)
-            if ray.entity in Jeu_.lemmings:
+            if ray.entity in Jeu_.lemmings_actif:
                 Jeu_.removelemming(ray.entity)
 
     class Win_block(Entity):
@@ -303,7 +335,7 @@ class Material():
 
         def update(self):
             ray = boxcast(origin=self.world_position, thickness=self.scale)
-            if ray.entity in Jeu_.lemmings:
+            if ray.entity in Jeu_.lemmings_actif:
                 Jeu_.win()
 
 
@@ -314,28 +346,29 @@ class Sound(Audio):
 
     def __init__(self):
         self.muet = False
-        self.__music_start = Audio('music_start', autoplay=False, loop=True)
-        self.__music_gameplay = Audio(
-            'music_gameplay', autoplay=False, loop=True)
+        self.__music_trap_remix = Audio(
+            'music_trap_remix', autoplay=False, loop=True)
+        self.__music_without_communist = Audio(
+            'music_without_communist', autoplay=False, loop=True)
         self.dernier_joué = None
 
-    def play_music(self, music):
-        for e in [self.__music_start, self.__music_gameplay]:
+    def jouer_music(self, music):
+        for e in [self.__music_trap_remix, self.__music_without_communist]:
             if e.playing == True:
                 Sound.pause(e)
         if not self.muet and self.dernier_joué != music:
             if music == 'start':
-                Sound.play(self.__music_start)
+                Sound.play(self.__music_trap_remix)
                 self.dernier_joué = 'start'
             if music == 'gameplay':
-                Sound.play(self.__music_gameplay)
+                Sound.play(self.__music_without_communist)
                 self.dernier_joué = 'gameplay'
         else:
             self.set_unmuet()
 
     def set_muet(self):
         self.muet = True
-        for e in [self.__music_start, self.__music_gameplay]:
+        for e in [self.__music_trap_remix, self.__music_without_communist]:
             if e.playing == True:
                 Sound.pause(e)
 
@@ -343,194 +376,176 @@ class Sound(Audio):
         # reactive le dernier son
         self.muet = False
         if self.dernier_joué == 'start':
-            Sound.resume(self.__music_start)
+            Sound.resume(self.__music_trap_remix)
             self.dernier_joué = 'start'
         if self.dernier_joué == 'gameplay':
-            Sound.resume(self.__music_gameplay)
+            Sound.resume(self.__music_without_communist)
             self.dernier_joué = 'gameplay'
 
 
 class Jeu():
     def __init__(self):
         self.music = Sound()
-        self.active_scene = []
-        self.lemmings = []
-        self.lemmings_cap = 0
-        self.level = 0
+        self.niveaux = Niveaux()
         self.camera = Camera()
-        self.strike = Entity(model='cube', texture='mute', scale_x=.75, scale_y=.75,
-                             x=-6.6, y=-3.5, enabled=False, eternal=False)
 
-    def start_menu(self):
-        self.level = 0
-        [destroy(self.active_scene.pop())
-         for _ in range(len(self.active_scene))]
-        self.music.play_music('start')
+        self.scene_active = []
+        self.num_niveaux = 0
+
+        self.lemmings = {}
+        self.lemmings_actif = []
+        self.lemmings_cap = 0
+        self.croix_muet = Entity(model='cube', texture='mute', scale_x=.75, scale_y=.75,
+                                 x=-6.6, y=-3.5, enabled=False, eternal=False)
+
+    def demarer(self):
+        self.num_niveaux = 0
+        [destroy(self.scene_active.pop())
+         for _ in range(len(self.scene_active))]
+        self.music.jouer_music('start')
         Camera.disable(self.camera)
         lemmings_start = Entity(model='quad', texture='lemmings_start.mp4',
                                 scale=(14.5, 8.2))
-        start_button = Button(parent=camera.ui, model='cube',
+        boutton_demarer = Button(parent=camera.ui, model='cube',
                               x=-.33, y=.024, scale=(.325, .1, 1))
-        quit_button = Button(parent=camera.ui, model='cube',
+        boutton_quitter = Button(parent=camera.ui, model='cube',
                              x=.33, y=.024, scale=(.325, .1, 1))
-        muet_button = Button(parent=camera.ui, model='quad', scale_x=.095, scale_y=.095, x=-.825,
+        boutton_muet = Button(parent=camera.ui, model='quad', scale_x=.095, scale_y=.095, x=-.825,
                              y=-.44)
-        muet_button.on_click = self.muet
-        start_button.on_click = self.start_game
-        quit_button.on_clic = application.quit
-        [self.active_scene.append(x) for x in [
-            lemmings_start, start_button, quit_button, muet_button, self.strike]]
+        boutton_muet.on_click = self.muet
+        boutton_demarer.on_click = self.jeu
+        boutton_quitter.on_clic = application.quit
+        [self.scene_active.append(x) for x in [
+            lemmings_start, boutton_demarer, boutton_quitter, boutton_muet, self.croix_muet]]
 
     def muet(self):
         if not self.music.muet:
             self.music.set_muet()
-            self.strike.enabled = True
+            self.croix_muet.enabled = True
         else:
             self.music.set_unmuet()
-            self.strike.enabled = False
+            self.croix_muet.enabled = False
 
-    def start_game(self):
-        [destroy(self.active_scene.pop())
-         for _ in range(len(self.active_scene))]
+    def jeu(self):
+        [destroy(self.scene_active.pop())
+         for _ in range(len(self.scene_active))]
 
         Camera.enable(self.camera)
-        help_tip = Text(text='hold "tab" for help', origin=(0, 0), y=-.45)
+        help_tip = Text(
+            text="maintenez 'tab' pour obtenir de l'aide", origin=(0, 0), y=-.45)
         sky = Sky()
-        self.music.play_music('gameplay')
+        self.music.jouer_music('gameplay')
 
-        [self.active_scene.append(x) for x in [
+        [self.scene_active.append(x) for x in [
             help_tip, sky]]
 
-        if self.level == 0:
+        if self.num_niveaux == 0:
             self.lemmings_cap += 7
             self.addlemming()
-            lvl = [
-                Material.Concrete(scale=(1, 3), position=(-.5, 1.5)),
-                Material.Concrete(scale=(4, 1), position=(1, -.5)),
-                Material.Concrete(scale=(1, 5), position=(2.5, -3.5)),
-                Material.Concrete(scale=(4, 1), position=(4, -6.5)),
-                Material.Concrete(scale=(1, 3), position=(5.5, -8.5)),
-                Material.Death_block(scale=(1, 1), position=(6.5, -3.5)),
-                Material.Death_block(scale=(1, 1), position=(6.5, -10.5)),
-                Material.Concrete(scale=(3, 1), position=(8.5, -9.5)),
-                Material.Concrete(scale=(2, 1), position=(11, -8.5)),
-                Material.Concrete(scale=(2, 1), position=(13, -7.5)),
-                Material.Concrete(scale=(1, 10), position=(17.5, -3)),
-                Material.Win_block(scale=(3, 1), position=(15.5, -8.5)),
-                Material.Concrete(scale=(2, 1), position=(6, -.5)),
-                Material.Concrete(scale=(2, 1), position=(8, .5)),
-                Material.Concrete(scale=(2, 1), position=(10, 1.5))
-            ]
-            [self.active_scene.append(x) for x in lvl]
+            self.niveaux.generer_niveau(0)
+            lvl = []
+            [self.scene_active.append(x) for x in lvl]
 
-        if self.level == 1:
+        if self.num_niveaux == 1:
             self.lemmings_cap += 15
-            lvl = [
-                Material.Concrete(scale=(5, 1), position=(0, -2)),
-                Material.Concrete(scale=(1, 3), position=(3, -2)),
-                Material.Concrete(scale=(1, 2), position=(-3, -1.5)),
-                Material.Concrete(scale=(1, 6), position=(6, -1.5)),
-                Material.Concrete(scale=(7, 1), position=(3, -5)),
-                Material.Concrete(scale=(1, 6), position=(-3, -5.5)),
-                Material.Concrete(scale=(4, 1), position=(-1.5, -9)),
-                Material.Concrete(scale=(1, 1), position=(0, -8)),
-                Material.Death_block(scale=(1, 0.5), position=(1, -9.25)),
-                Material.Concrete(scale=(5, 1), position=(4, -9)),
-                Material.Concrete(scale=(1, 1), position=(7, -8)),
-                Material.Concrete(scale=(1, 1), position=(8, -7)),
-                Material.Concrete(scale=(1, 1), position=(9, -6)),
-                Material.Concrete(scale=(1, 1), position=(10, -5)),
-                Material.Win_block(scale=(3, 1), position=(12, -50)),
-            ]
-            [self.active_scene.append(x) for x in lvl]
+            lvl = [self.niveaux.generer_niveau(1)]
+            [self.scene_active.append(x) for x in lvl]
 
-        if self.level == 2:
+        if self.num_niveaux == 2:
             destroy(help_tip)
             Camera.disable(self.camera)
+
+            with open('credits.txt', 'r') as file:
+                credits_ = file.read().replace('\n', '')
+
             lvl = [
                 Entity(model='quad', scale=(100, 100,), color=color.red),
-                Text('''
-                You win!
-                -------------------------------------
-                Created by Dyami Neu and Andy How
-                This work is marked with CC0 1.0 Universal.
-                
-                Built in Python with the Ursina engine.
-                -----------assets credited-----------
-                Anji bamboo forest (title screen) - Clerkwheel (modified) | CC 3.0
-                Golden.ttf (title font) - imagex | CC 3.0
-                Pixel.ttf (CC font) - Markus Schröppel | CC 3.0
-                Mao zedong propaganda music Trap remix (title screen music) - Vosi
-                Without the Communist Party, There Would Be No New China (gameplay music) - Communist Party of China
-                Concrete wall texture - texturepalace.com | CC 4.0
-                -------------------------------------
-                press "escape" to exit to main menu
-                ''', background=True, x=-.7, y=.3)
+                Text(text=credits_, background=True,
+                     x=-.7, y=.3).appear(speed=.025)
             ]
 
-            [self.active_scene.append(x) for x in lvl]
+            [self.scene_active.append(x) for x in lvl]
 
     def addlemming(self, position=(0, 0, 0)):
-        self.lemmings.append(Lemming(position=position))
+        # ajoute un lemming a la position position
+        if len(self.lemmings) > self.lemmings_cap:
+            return
 
-    def removelemming(self, lemming):
-        lemming.enabled = False
+        lemming_nom = 'lemming-'+str(len(self.lemmings)+1)
+        self.lemmings[lemming_nom] = Lemming(position=position)
+        self.lemmings_actif = [
+            lemming for lemming in self.lemmings.values() if lemming.enabled == True]
+
+    def removelemming(self, lemming_supprimer):
+        # supprimer un lemming
+        if lemming_supprimer == None:
+            return
+
+        for key, value in self.lemmings.items():
+            if value == lemming_supprimer:
+                lemming_chercher = key
+                break
+
+        self.lemmings[lemming_chercher].disable()
+        self.lemmings_actif = [
+            lemming for lemming in self.lemmings.values() if lemming.enabled == True]
+
         if len(self.lemmings) >= self.lemmings_cap:
             self.game_over()
 
     def win(self):
-        self.level += 1
-        self.start_game()
+        # condition de victoire
+        self.num_niveaux += 1
+        self.jeu()
 
     def game_over(self):
+        # condition de perte
         Camera.disable(self.camera)
         game_over_screen = [
             Entity(model='quad', scale=(100, 100, 1), color=color.black, z=-3),
-            Text('''You lost!,\n\n press "escape"''')
+            Text('''Tu as perdu!,\n\n presse "escape"''')
         ]
-        [self.active_scene.append(x) for x in game_over_screen]
+        [self.scene_active.append(x) for x in game_over_screen]
 
 
 Jeu_ = Jeu()
 
-help_panel = WindowPanel(
-    title='Help',
+panneau_aide = WindowPanel(
+    title='Aide',
     content=(
-        Text('''use "+" to add a lemming \n\n 
-                use keys "0" to "9"\n 
-                to change walking speed of lemming(s) \n\n 
-                use "space"\n 
-                to make the lemming(s) saut\n\n
-                use mouse to navigate\n\n
-                use "shift"+"f" to recenter camera'''),
+        Text('''utilisez "+" pour ajouter un lemming \n\n
+                 utiliser "espace" pour\n
+                 faire sauter le(s) lemming(s)\n\n
+                 utilisez la souris pour naviguer\n\n
+                 utilisez "shift" + "f" pour recentrer la caméra'''),
     ),
     popup=True,
     enabled=False
 )
 
 
-def input(key, help_panel=help_panel):
+def input(key, help_panel=panneau_aide):
     if len(Jeu_.lemmings) > 0:
         if key == '+' and len(Jeu_.lemmings) < Jeu_.lemmings_cap:
             Jeu_.addlemming()
 
-        if key == 'space':
-            for e in Jeu_.lemmings:
-                e.saut()
+        if 'space' in key:
+            for lemming in Jeu_.lemmings_actif:
+                lemming.saut()
 
         if held_keys['tab']:
-            help_panel.enabled = True
+            panneau_aide.enabled = True
         else:
-            help_panel.enabled = False
+            panneau_aide.enabled = False
 
         if key == Keys.escape:
-            Jeu_.start_menu()
+            Jeu_.demarer()
 
         print(key)
 
 
 def main():
-    Jeu_.start_menu()
+    Jeu_.demarer()
     app.run()
 
 
