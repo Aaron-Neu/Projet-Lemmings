@@ -160,15 +160,15 @@ class Lemming(Entity):
     def atterrissage(self):
         self.air_temps = 0
         self.atterri = True
-    
+
     def précipité(self):
         if self.sauter:
             return
-        if boxcast(self.position+(0, .1, 0), (self.sens_mouvement,0,0), distance=self.scale_y*self.vitesse, thickness=.95,
+        if boxcast(self.position+(0, .1, 0), (self.sens_mouvement, 0, 0), distance=self.scale_y*self.vitesse, thickness=.95,
                    ignore=(self,), traverse_target=scene).hit:
             return
-        
-        target_x = self.x + self.vitesse
+
+        target_x = self.x + self.vitesse * self.sens_mouvement
         duration = self.précipité_duration
 
         self.animate_x(target_x, duration, curve=curve.in_out_expo)
@@ -555,6 +555,7 @@ panneau_aide = WindowPanel(
     content=(
         Text('utiliser "+" pour ajouter un lemming\n'),
         Text('utiliser "espace" pour faire sauter\n le(s) lemming(s)'),
+        Text('utiliser "shift" pour faire précipité\n le(s) lemming(s)'),
         Text('utiliser la souris pour naviguer\n'),
         Text('utiliser "shift" + "f" pour recentrer\n la caméra')
     ),
@@ -571,8 +572,8 @@ def input(key, help_panel=panneau_aide):
         if 'space' in key:
             for lemming in Jeu_.lemmings_actif:
                 lemming.saut()
-        
-        if 'shift' in key:
+
+        if key == 'shift':
             for lemming in Jeu_.lemmings_actif:
                 lemming.précipité()
 
