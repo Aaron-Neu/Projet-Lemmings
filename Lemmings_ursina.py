@@ -301,24 +301,27 @@ class Niveaux():
             return self.créer_niveau(self.niveau00)
 
     def créer_niveau(self, texture_niveau):
+        # creation d'un niveau a partir d'une image
         décalage = 10
-        couleur_encadrement=color.rgb(25,76,34,130)
-        niveau_cadre = [Entity(enabled=False,position=(-1,-1,-1))]
+        couleur_encadrement = color.rgb(25, 76, 34, 130)
+        niveau_cadre = [Entity(enabled=False, position=(-1, -1, -1))]
         for y in range(texture_niveau.height):
             for x in range(texture_niveau.width):
                 if texture_niveau.get_pixel(x, y) == color.black:
-                    niveau_cadre.append(Entity(model='cube', collider='box',  
-                    position=(x, y,), origin=(décalage, texture_niveau.height,), scale_z = 2,
-                    color=color.random_color()))
-        niveau_cadre.append(Entity(model='cube',color=couleur_encadrement,
-        scale=(texture_niveau.width,1,10),
-        position=((texture_niveau.width-2*décalage)/2,-texture_niveau.height-1)))
-        niveau_cadre.append(Entity(model='cube',color=couleur_encadrement,
-        scale=(1,texture_niveau.height,10),
-        position=(-décalage,-texture_niveau.height/2-1.5)))
-        niveau_cadre.append(Entity(model='cube',color=couleur_encadrement,
-        scale=(1,texture_niveau.height,10),
-        position=(texture_niveau.width-décalage,-texture_niveau.height/2-1.5)))
+                    niveau_cadre.append(Entity(model='cube', collider='box',
+                                               position=(x, y,), origin=(
+                                                   décalage, texture_niveau.height,), scale_z=2,
+                                               color=color.random_color()))
+
+        niveau_cadre.append(Entity(model='cube', color=couleur_encadrement,
+                                   scale=(texture_niveau.width, 1, 10),
+                                   position=((texture_niveau.width-2*décalage)/2, -texture_niveau.height-1)))
+        niveau_cadre.append(Entity(model='cube', color=couleur_encadrement,
+                                   scale=(1, texture_niveau.height, 10),
+                                   position=(-décalage, -texture_niveau.height/2-1.5)))
+        niveau_cadre.append(Entity(model='cube', color=couleur_encadrement,
+                                   scale=(1, texture_niveau.height, 10),
+                                   position=(texture_niveau.width-décalage, -texture_niveau.height/2-1.5)))
         return niveau_cadre
 
     class Death_block(Entity):
@@ -420,11 +423,11 @@ class Jeu():
         lemmings_start = Entity(model='quad', texture='lemmings_start.mp4',
                                 scale=(14.5, 8.2))
         boutton_demarer = Button(parent=camera.ui, model='cube',
-                              x=-.33, y=.024, scale=(.325, .1, 1))
+                                 x=-.33, y=.024, scale=(.325, .1, 1))
         boutton_quitter = Button(parent=camera.ui, model='cube',
-                             x=.33, y=.024, scale=(.325, .1, 1))
+                                 x=.33, y=.024, scale=(.325, .1, 1))
         boutton_muet = Button(parent=camera.ui, model='quad', scale_x=.095, scale_y=.095, x=-.825,
-                             y=-.44)
+                              y=-.44)
         boutton_muet.on_click = self.muet
         boutton_demarer.on_click = self.jeu
         boutton_quitter.on_clic = application.quit
