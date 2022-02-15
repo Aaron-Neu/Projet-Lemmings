@@ -309,11 +309,12 @@ class Niveaux():
         self.niveau08 = load_texture('niveau08')
         self.thème = {
             'bambou': ['grey_stone', ['Bamboo_Texture', 'Bamboo'], ['Bamboo_color', 'Iphone_Bamboo'], 'Bamboo_Forest'],
+            'ville': ['concrete',['Cracked_Asphalt','foot_Steel'],['rebar','Shingles'],'Macau']
         }
 
     def generer_niveau(self, num):
         if num == 1:
-            return self.créer_niveau(self.niveau01)
+            return self.créer_niveau(self.niveau01,self.thème['ville'])
         elif num == 2:
             return self.créer_niveau(self.niveau02)
         elif num == 3:
@@ -432,24 +433,25 @@ class Sound(Audio):
         self.__music_without_communist = Audio(
             'music_without_communist', autoplay=False, loop=True)
         self.dernier_joué = None
+        self.liste_music = [self.__music_trap_remix,self.__music_without_communist]
 
     def jouer_music(self, music):
-        for e in [self.__music_trap_remix, self.__music_without_communist]:
+        for e in self.liste_music:
             if e.playing == True:
                 Sound.pause(e)
         if not self.muet and self.dernier_joué != music:
             if music == 'start':
                 Sound.play(self.__music_trap_remix)
                 self.dernier_joué = 'start'
-            if music == 'gameplay':
+            if music == 'gameplay00':
                 Sound.play(self.__music_without_communist)
-                self.dernier_joué = 'gameplay'
+                self.dernier_joué = 'gameplay00'
         else:
             self.set_unmuet()
 
     def set_muet(self):
         self.muet = True
-        for e in [self.__music_trap_remix, self.__music_without_communist]:
+        for e in self.liste_music:
             if e.playing == True:
                 Sound.pause(e)
 
@@ -459,9 +461,9 @@ class Sound(Audio):
         if self.dernier_joué == 'start':
             Sound.resume(self.__music_trap_remix)
             self.dernier_joué = 'start'
-        if self.dernier_joué == 'gameplay':
+        if self.dernier_joué == 'gameplay00':
             Sound.resume(self.__music_without_communist)
-            self.dernier_joué = 'gameplay'
+            self.dernier_joué = 'gameplay00'
 
 
 class Jeu():
@@ -517,7 +519,7 @@ class Jeu():
         help_tip = Text(
             text="maintenez 'tab' pour obtenir de l'aide", origin=(0, 0), y=-.45, color=color.black)
         sky = Sky()
-        self.music.jouer_music('gameplay')
+        self.music.jouer_music('gameplay00')
 
         [self.scene_active.append(x) for x in [
             help_tip, sky]]

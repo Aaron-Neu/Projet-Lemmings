@@ -1,6 +1,6 @@
 -------------------------------------
 Créé par Dyami Neu et Andy How
-Ce travail est marqué avec CC0 1.0 Universal.
+Ce travail est marqué avec CC BY-NC-SA 2.0.
 
 Construit en Python avec le module Ursina.
 -----------assets crédité-----------
@@ -16,5 +16,10 @@ Concrete - texturepalace.com | CC 4.0
 "Bamboo Texture" - planetoftheweb | CC BY 2.0
 "iPhone Bamboo" - robmcm | CC BY-SA 2.0
 "Bamboo color" - NiteLynx | CC BY-NC-SA 2.0
+"Macau (China) [City Clock]" - City Clock Magazine | CC BY-NC-SA 2.0 
+"Cracked Asphalt Texture" - GrungeTextures | CC BY-NC 2.0
+"Foot Shined Steel" - Leonski | CC BY-NC 2.0
+"Roofing Shingles" - Filter Forge | CC BY 2.0
+"Oct. 1, 2014 - New rebar for a new bridge" - WSDOT | CC BY-NC-ND 2.0
 -------------------------------------
 appuyez sur "escape" pour quitter au menu principal
