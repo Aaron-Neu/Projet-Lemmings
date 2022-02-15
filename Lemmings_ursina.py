@@ -467,6 +467,9 @@ class Sound(Audio):
 
 
 class Jeu():
+    """
+    Class principale qui gère le jeu
+    """
     def __init__(self):
         self.music = Sound()
         self.niveaux = Niveaux()
