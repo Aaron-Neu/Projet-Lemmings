@@ -1,9 +1,9 @@
 -------------------------------------
-Créé par Dyami Neu et Andy How
-Ce travail est marqué avec CC BY-NC-SA 2.0.
+Cree par Dyami Neu et Andy How
+Ce travail est marque avec CC BY-NC-SA 2.0.
 
 Construit en Python avec le module Ursina.
------------assets crédité-----------
+-----------assets credite-----------
 Anji bamboo forest (title screen) - Clerkwheel (modified) | CC 3.0
 Golden.ttf (title font) - imagex | CC 3.0
 Pixel.ttf (CC font) - Markus Schröppel | CC 3.0
@@ -21,5 +21,6 @@ Concrete - texturepalace.com | CC 4.0
 "Foot Shined Steel" - Leonski | CC BY-NC 2.0
 "Roofing Shingles" - Filter Forge | CC BY 2.0
 "Oct. 1, 2014 - New rebar for a new bridge" - WSDOT | CC BY-NC-ND 2.0
+"camouflage pattern" - Creativity103 | CC BY-NC-ND 2.0
 -------------------------------------
 appuyez sur "escape" pour quitter au menu principal

@@ -1,4 +1,5 @@
 """
+Fichier Principal
 Auteurs : Dyami Neu et Andy How
 
 Projet Lemming en 3d
@@ -8,19 +9,9 @@ Documentation: https://www.ursinaengine.org/documentation.html
 Toutes licenses associes sont mentionnes dans le fichier texte 'credit.txt'
 """
 from random import randint
+from turtle import position
 from ursina import curve
 from ursina import *
-
-# configure la fenêtre d'affichage
-fullscreen = False
-development_mode = True
-title = 'lemmings 2: Electric Boogaloo'
-borderless = False
-forced_aspect_ratio = 1.778
-app = Ursina(fullscreen=fullscreen, development_mode=development_mode,
-             title=title, borderless=borderless, forced_aspect_ratio=forced_aspect_ratio)
-window.fps_counter.enabled = True
-window.icon = 'icon.ico'
 
 
 class Lemming(Entity):
@@ -28,11 +19,12 @@ class Lemming(Entity):
     Objet lemming, controler par le joueur, on instacie cette classe pour creer un lemming
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, jeu, **kwargs):
         super().__init__()
 
         nb_hasard = randint(1, 3)
 
+        self.instance_jeu = jeu
         self.model = 'lemming_model'
         self.origin_y = -.15
         self.origin_z = 1+2*randint(-1, 1)
@@ -57,6 +49,7 @@ class Lemming(Entity):
 
         self.atterri = True
         self.air_temps = 0
+        self.gravité = .5
         self._sequence_atterrissage = None
 
         # vérifie si un objet obstrue le lemming et modifie la position du lemming
@@ -80,7 +73,6 @@ class Lemming(Entity):
         if ray_left.hit:
             self.x = ray_left.world_point[0] + 1
 
-        self.gravité = .5
 
     def update(self):
         # vérifie si le lemming touche un objet
@@ -93,7 +85,7 @@ class Lemming(Entity):
             traverse_target=scene,
             thickness=(self.scale_x*.9, self.scale_y*.9),
         )
-        if hit_info.hit == False or hit_info.entity in Jeu_.lemmings:
+        if hit_info.hit == False or hit_info.entity in self.instance_jeu.lemmings:
             self.x += self.sens_mouvement * time.dt * self.vitesse
         else:
             self.sens_mouvement *= -1
@@ -123,6 +115,8 @@ class Lemming(Entity):
         if not self.atterri and not self.sauter:
             self.y -= min(self.air_temps * self.gravité, ray.distance-.1)
             self.air_temps += time.dt*4 * self.gravité
+            if self.y < -200:
+                self.instance_jeu.removelemming(self)
 
         # si le lemming saute
         if self.sauter:
@@ -183,16 +177,116 @@ class Lemming(Entity):
         self.précipité_refroidir = False
 
 
+class Char(Entity):
+    """
+    Objet Char, ennemie
+    """
+
+    def __init__(self, jeu, position, **kwargs):
+        super().__init__()
+
+        self.instance_jeu = jeu
+        self.model = 'char_model'
+        self.origin_y = -.15
+        self.scale = (.4, .6, .5)
+        self.collider = 'char_model'
+        self.color = color.white
+        self.texture = 'char'
+        self.position = position
+
+        self.__dict__.update(kwargs)
+
+        self.tire_refroidir = False
+        self.vitesse = .5
+        self.sens_mouvement = 1  # gauche = -1 droite = 1
+
+        self.atterri = True
+        self.air_temps = 0
+        self.gravité = .5
+
+    def update(self):
+        hit_info = boxcast(
+            self.position+Vec3(self.sens_mouvement * time.dt *
+                               self.vitesse, self.scale_y/2, 0),
+            direction=Vec3(self.sens_mouvement, 0, 0),
+            distance=abs(self.scale_x/2),
+            ignore=(self, ),
+            traverse_target=scene,
+            thickness=(self.scale_x*.9, self.scale_y*.9),
+        )
+        if hit_info.hit == False:
+            self.x += self.sens_mouvement * time.dt * self.vitesse
+        else:
+            self.sens_mouvement *= -1
+            self.look_at((self.x, self.y, self.sens_mouvement))
+            self.y += .1
+            self.x -= .01
+
+        ray = boxcast(
+            self.world_position+Vec3(0, .1, 0),
+            direction=Vec3(self.sens_mouvement, 0, 0),
+            distance=5,
+            ignore=(self, ),
+            traverse_target=scene,
+            thickness=2
+        )
+        if ray.hit:
+            if ray.entity in self.instance_jeu.lemmings_actif:
+                self.tire(ray.entity.world_position)
+        
+        ray = boxcast(
+            self.world_position+Vec3(0, .1, 0),
+            self.down,
+            distance=max(.1, self.air_temps * self.gravité),
+            ignore=(self, ),
+            traverse_target=scene,
+            thickness=self.scale_x*.9
+        )
+        if ray.hit:
+            if not self.atterri:
+                self.atterrissage()
+            self.atterri = True
+            self.y = ray.world_point[1]
+            return
+        else:
+            self.atterri = False
+
+        if not self.atterri:
+            self.y -= min(self.air_temps * self.gravité, ray.distance-.1)
+            self.air_temps += time.dt*4 * self.gravité
+            if self.y < -200:
+                self.instance_jeu.removelemming(self)
+
+    def tire(self, target):
+        if self.tire_refroidir:
+            return
+        obus = Entity(model='cube', colider='cube', origin=self.origin,
+                      position=(self.x+2*self.sens_mouvement,self.y+.5,self.z), scale=(.1, .1, .1), color=color.gray)
+        obus.animate_position(target, duration=1, curve=curve.in_out_quad)
+        ray = boxcast(obus.world_position, distance=.5, thickness=.5)
+        if ray.entity in self.instance_jeu.lemmings_actif:
+            self.instance_jeu.removelemming(ray.entity)
+        self.instance_jeu.scene_active.append(obus)
+        invoke(self.tire_a_zero, delay=2)
+
+    def tire_a_zero(self):
+        self.tire_refroidir = False
+    
+    def atterrissage(self):
+        self.air_temps = 0
+        self.atterri = True
+
+
 class Camera(Entity):
     """
     Camera basic avec une limite max et min sur le zoom
     inspire par: https://github.com/pokepetter/ursina/blob/master/ursina/prefabs/editor_camera.py
     """
 
-    def __init__(self):
+    def __init__(self, jeu, **kwargs):
         camera.editor_position = camera.position
         super().__init__(name='camera', eternal=True)
-
+        self.instance_jeu = jeu
         self.rotation_speed = 200
         self.pan_speed = Vec2(5, 5)
         self.move_speed = 10
@@ -287,8 +381,8 @@ class Camera(Entity):
                 mouse.velocity[1] * self.pan_speed[1] * zoom_compensation
 
         if self.focus:
-            if len(Jeu_.lemmings_actif)>0:
-                self.position = Jeu_.lemmings_actif[-1].position
+            if len(self.instance_jeu.lemmings_actif) > 0:
+                self.position = self.instance_jeu.lemmings_actif[-1].position
         camera.z = lerp(camera.z, self.target_z, time.dt*self.zoom_smoothing)
 
 
@@ -297,19 +391,19 @@ class Niveaux():
     Regroupement de classes qui sont utiliser pour construire les niveaux
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.niveau00 = load_texture('niveau00')
         self.niveau01 = load_texture('niveau01')
         self.niveau02 = load_texture('niveau02')
         self.niveau03 = load_texture('niveau03')
         self.thème = {
             'bambou': ['grey_stone', ['Bamboo_Texture', 'Bamboo'], ['Bamboo_color', 'Iphone_Bamboo'], 'Bamboo_Forest'],
-            'ville': ['concrete',['Cracked_Asphalt','foot_Steel'],['rebar','Shingles'],'Macau']
+            'ville': ['concrete', ['Cracked_Asphalt', 'foot_Steel'], ['rebar', 'Shingles'], 'Macau']
         }
 
     def generer_niveau(self, num):
         if num == 1:
-            return self.créer_niveau(self.niveau01,self.thème['ville'])
+            return self.créer_niveau(self.niveau01, self.thème['ville'])
         elif num == 2:
             return self.créer_niveau(self.niveau02)
         elif num == 3:
@@ -327,6 +421,7 @@ class Niveaux():
         décalage = 10
         couleur_encadrement = color.rgb(252, 234, 196)
         niveau_cadre = [Entity(enabled=False, position=(-1, -1, -1))]
+
         for y in range(texture_niveau.height):
             for x in range(texture_niveau.width):
                 if texture_niveau.get_pixel(x, y) == color.rgb(0, 0, 0):
@@ -349,16 +444,24 @@ class Niveaux():
                                                    décalage, texture_niveau.height,), scale_z=.2,
                                                texture=secondaire[randint(0, len(secondaire)-1)]))
 
-        niveau_cadre.append(Entity(model='plane', color=color.white,
+        niveau_cadre.append(Entity(model='plane', color=color.gray,
                                    scale=(1000, 1, 1000), rotation=(180),
                                    position=(0, -(texture_niveau.height)-1.5, 5)))
         niveau_cadre.append(Entity(model='cube', texture=fond,
+                                   scale=(texture_niveau.width-1,
+                                          texture_niveau.height+1, 1),
+                                   position=((texture_niveau.width-2*décalage)/2, -(texture_niveau.height)/2-.5, 5)))
+        niveau_cadre.append(Entity(model='cube', color=couleur_encadrement,
                                    scale=(texture_niveau.width,
                                           texture_niveau.height+2, 1),
-                                   position=((texture_niveau.width-2*décalage)/2, -(texture_niveau.height)/2-.5, 5)))
+                                   position=((texture_niveau.width-2*décalage)/2, -(texture_niveau.height)/2-.5, 5.5)))
+        niveau_cadre.append(Entity(model='cube', color=couleur_encadrement.tint(-.05),
+                                   scale=(texture_niveau.width/1.5,
+                                          texture_niveau.height/2, 4),
+                                   position=((texture_niveau.width-2*décalage)/2, -(texture_niveau.height)/2-.5, 7)))
         niveau_cadre.append(Entity(model='cube', color=color.rgb(15, 243, 60, 20),
                                    scale=(texture_niveau.width,
-                                          texture_niveau.height+2, 1),
+                                          texture_niveau.height+1, 1),
                                    position=((texture_niveau.width-2*décalage)/2, -(texture_niveau.height)/2-.5, -5)))
         niveau_cadre.append(Entity(model='cube', color=couleur_encadrement,
                                    scale=(texture_niveau.width, 1, 10),
@@ -375,8 +478,9 @@ class Niveaux():
         return niveau_cadre
 
     class Death_block(Entity):
-        def __init__(self, **kwargs):
+        def __init__(self, jeu, **kwargs):
             super().__init__(**kwargs)
+            self.instance_jeu = jeu
             self.model = 'cube'
             self.collider = 'box'
             self.enabled = True
@@ -386,12 +490,13 @@ class Niveaux():
 
         def update(self):
             ray = boxcast(origin=self.world_position, thickness=self.scale)
-            if ray.entity in Jeu_.lemmings_actif:
-                Jeu_.removelemming(ray.entity)
+            if ray.entity in self.instance_jeu.lemmings_actif:
+                self.instance_jeu.removelemming(ray.entity)
 
     class Win_block(Entity):
-        def __init__(self, **kwargs):
+        def __init__(self, jeu, **kwargs):
             super().__init__(**kwargs)
+            self.instance_jeu = jeu
             self.name = 'Win_block'
             self.model = 'cube'
             self.collider = 'box'
@@ -402,8 +507,8 @@ class Niveaux():
 
         def update(self):
             ray = boxcast(origin=self.world_position, thickness=self.scale)
-            if ray.entity in Jeu_.lemmings_actif:
-                Jeu_.win()
+            if ray.entity in self.instance_jeu.lemmings_actif:
+                self.instance_jeu.win()
 
 
 class Sound(Audio):
@@ -411,26 +516,27 @@ class Sound(Audio):
     Gère les sons du jeu
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.muet = False
         self.__music_trap_remix = Audio(
             'music_trap_remix', autoplay=False, loop=True)
         self.__music_without_communist = Audio(
             'music_without_communist', autoplay=False, loop=True)
-        self.dernier_joué = None
-        self.liste_music = [self.__music_trap_remix,self.__music_without_communist]
+        self.dernier_joué = []
+        self.liste_music = [self.__music_trap_remix,
+                            self.__music_without_communist]
 
     def jouer_music(self, music):
         for e in self.liste_music:
             if e.playing == True:
                 Sound.pause(e)
-        if not self.muet and self.dernier_joué != music:
+        if not self.muet and  music not in self.dernier_joué:
             if music == 'start':
                 Sound.play(self.__music_trap_remix)
-                self.dernier_joué = 'start'
+                self.dernier_joué.append('start')
             if music == 'gameplay00':
                 Sound.play(self.__music_without_communist)
-                self.dernier_joué = 'gameplay00'
+                self.dernier_joué.append('gameplay00')
         else:
             self.set_unmuet()
 
@@ -443,22 +549,35 @@ class Sound(Audio):
     def set_unmuet(self):
         # reactive le dernier son
         self.muet = False
-        if self.dernier_joué == 'start':
+        if self.dernier_joué[-1] == 'start':
             Sound.resume(self.__music_trap_remix)
-            self.dernier_joué = 'start'
-        if self.dernier_joué == 'gameplay00':
+            self.dernier_joué.append('start')
+        if self.dernier_joué[-1] == 'gameplay00':
             Sound.resume(self.__music_without_communist)
-            self.dernier_joué = 'gameplay00'
+            self.dernier_joué.append('gameplay00')
 
 
-class Jeu():
+class Jeu(Entity):
+    # configure la fenêtre d'affichage
+    fullscreen = False
+    development_mode = True
+    title = 'lemmings 2: Electric Boogaloo'
+    borderless = False
+    forced_aspect_ratio = 1.778
+    app = Ursina(fullscreen=fullscreen, development_mode=development_mode,
+                 title=title, borderless=borderless, forced_aspect_ratio=forced_aspect_ratio)
+    window.fps_counter.enabled = True
+    window.icon = 'icon.ico'
+
     """
-    Class principale qui gère le jeu
+    Class principale, qui gère le jeu
     """
+
     def __init__(self):
+        super().__init__()
         self.music = Sound()
         self.niveaux = Niveaux()
-        self.camera = Camera()
+        self.camera = Camera(self)
 
         self.scene_active = []
         self.num_niveaux = 0
@@ -469,11 +588,28 @@ class Jeu():
         self.lemmings_cap = 0
         self.croix_muet = Entity(model='cube', texture='mute', scale_x=.75, scale_y=.75,
                                  x=-6.6, y=-3.5, enabled=False, eternal=False)
+        self.panneau_aide = WindowPanel(
+            position=(0, 0),
+            title='Aide',
+            content=(
+                Text('utiliser "+" pour ajouter un lemming\n'),
+                Text('utiliser "espace" pour faire sauter\n le(s) lemming(s)'),
+                Text('utiliser "shift" pour faire précipité\n le(s) lemming(s)'),
+                Text('utiliser la souris pour naviguer\n'),
+                Text('utiliser "shift" + "f" pour recentrer\n la caméra')
+            ),
+            popup=True,
+            enabled=False
+        )
 
     def demarer(self):
-        self.num_niveaux = 0
+        # le menu d'entre du jeu
         [destroy(self.scene_active.pop())
          for _ in range(len(self.scene_active))]
+        [self.removelemming(x)
+         for x in self.lemmings_actif]
+        self.num_niveaux = 0
+
         self.music.jouer_music('start')
         Camera.disable(self.camera)
         lemmings_start = Entity(model='quad', texture='lemmings_start.mp4',
@@ -502,25 +638,30 @@ class Jeu():
         self.vue_menu = False
         [destroy(self.scene_active.pop())
          for _ in range(len(self.scene_active))]
+        [self.removelemming(x)
+         for x in self.lemmings_actif]
 
         Camera.enable(self.camera)
         help_tip = Text(
             text="maintenez 'tab' pour obtenir de l'aide", origin=(0, 0), y=-.45, color=color.black)
         sky = Sky()
-        self.music.jouer_music('gameplay00')
 
         [self.scene_active.append(x) for x in [
             help_tip, sky]]
 
         if self.num_niveaux == 0:
-            self.lemmings_cap += 7
+            self.music.jouer_music('gameplay00')
+            self.lemmings_cap += 5
             lvl = self.niveaux.generer_niveau(0)
-            lvl.append(self.niveaux.Win_block(position=(57.5,-22,)))
+            lvl.append(self.niveaux.Win_block(self, position=(57.5, -22,)))
             [self.scene_active.append(x) for x in lvl]
 
         if self.num_niveaux == 1:
-            self.lemmings_cap += 15
-            lvl = [self.niveaux.generer_niveau(1)]
+            self.music.jouer_music('gameplay00')
+            self.lemmings_cap += 10
+            lvl = self.niveaux.generer_niveau(1)
+            lvl.append(self.niveaux.Win_block(self, position=(130, -40,)))
+            lvl.append(Char(self, (20, -40,)))
             [self.scene_active.append(x) for x in lvl]
 
         if self.num_niveaux == 2:
@@ -528,24 +669,25 @@ class Jeu():
             Camera.disable(self.camera)
 
             with open('credits.txt', 'r') as file:
-                credits_ = file.read().replace('\n', '')
+                credits_ = file.read()
 
             lvl = [
                 Entity(model='quad', scale=(100, 100,), color=color.red),
                 Text(text=credits_, background=True,
-                     x=-.7, y=.3).appear(speed=.025)
+                     x=-.7, y=.3)
             ]
+            lvl[-1].appear(speed=.025)
 
             [self.scene_active.append(x) for x in lvl]
 
-    def addlemming(self, position=(0, 0, 0)):
+    def addlemming(self, position=(2, -5, 0)):
         # ajoute un lemming a la position position
         if len(self.lemmings_actif) > self.lemmings_cap:
             Text("vous ne pouvez plus ajoutes de lemming, si vous etre bloquer, recomencer avec 'escape'")
             return
 
         lemming_nom = 'lemming-'+str(len(self.lemmings)+1)
-        self.lemmings[lemming_nom] = Lemming(position=position)
+        self.lemmings[lemming_nom] = Lemming(self, position=position)
         self.lemmings_actif = [
             lemming for lemming in self.lemmings.values() if lemming.enabled == True]
 
@@ -554,12 +696,14 @@ class Jeu():
         if lemming_supprimer == None:
             return
 
+        lemming_chercher = None
+
         for key, value in self.lemmings.items():
             if value == lemming_supprimer:
                 lemming_chercher = key
                 break
-
-        self.lemmings[lemming_chercher].disable()
+        if lemming_chercher:
+            self.lemmings[lemming_chercher].disable()
         self.lemmings_actif = [
             lemming for lemming in self.lemmings.values() if lemming.enabled == True]
 
@@ -567,7 +711,7 @@ class Jeu():
             self.game_over()
 
     def win(self):
-        # condition de victoire
+        # condition de passage
         self.num_niveaux += 1
         self.jeu()
 
@@ -580,49 +724,32 @@ class Jeu():
         ]
         [self.scene_active.append(x) for x in game_over_screen]
 
+    def input(self, key):
+        if not self.vue_menu:
+            if key in ('+', '=') and len(self.lemmings) < self.lemmings_cap:
+                self.addlemming()
 
-Jeu_ = Jeu()
+            if held_keys['space']:
+                for lemming in self.lemmings_actif:
+                    lemming.saut()
 
-panneau_aide = WindowPanel(
-    position=(0, 0),
-    title='Aide',
-    content=(
-        Text('utiliser "+" pour ajouter un lemming\n'),
-        Text('utiliser "espace" pour faire sauter\n le(s) lemming(s)'),
-        Text('utiliser "shift" pour faire précipité\n le(s) lemming(s)'),
-        Text('utiliser la souris pour naviguer\n'),
-        Text('utiliser "shift" + "f" pour recentrer\n la caméra')
-    ),
-    popup=True,
-    enabled=False
-)
+            if key in 'shift':
+                for lemming in self.lemmings_actif:
+                    lemming.précipité()
 
+            if held_keys['tab']:
+                self.panneau_aide.enabled = True
+            else:
+                self.panneau_aide.enabled = False
 
-def input(key, help_panel=panneau_aide):
-    if not Jeu_.vue_menu:
-        if key == '+' and len(Jeu_.lemmings) < Jeu_.lemmings_cap:
-            Jeu_.addlemming()
-
-        if 'space' in key:
-            for lemming in Jeu_.lemmings_actif:
-                lemming.saut()
-
-        if key == 'shift':
-            for lemming in Jeu_.lemmings_actif:
-                lemming.précipité()
-
-        if held_keys['tab']:
-            panneau_aide.enabled = True
-        else:
-            panneau_aide.enabled = False
-
-        if key == Keys.escape:
-            Jeu_.demarer()
+            if key == Keys.escape:
+                self.demarer()
 
 
 def main():
+    Jeu_ = Jeu()
     Jeu_.demarer()
-    app.run()
+    Jeu_.app.run()
 
 
 if __name__ == '__main__':
