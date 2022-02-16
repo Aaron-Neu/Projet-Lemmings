@@ -302,11 +302,6 @@ class Niveaux():
         self.niveau01 = load_texture('niveau01')
         self.niveau02 = load_texture('niveau02')
         self.niveau03 = load_texture('niveau03')
-        self.niveau04 = load_texture('niveau04')
-        self.niveau05 = load_texture('niveau05')
-        self.niveau06 = load_texture('niveau06')
-        self.niveau07 = load_texture('niveau07')
-        self.niveau08 = load_texture('niveau08')
         self.thème = {
             'bambou': ['grey_stone', ['Bamboo_Texture', 'Bamboo'], ['Bamboo_color', 'Iphone_Bamboo'], 'Bamboo_Forest'],
             'ville': ['concrete',['Cracked_Asphalt','foot_Steel'],['rebar','Shingles'],'Macau']
@@ -319,16 +314,6 @@ class Niveaux():
             return self.créer_niveau(self.niveau02)
         elif num == 3:
             return self.créer_niveau(self.niveau03)
-        elif num == 4:
-            return self.créer_niveau(self.niveau04)
-        elif num == 5:
-            return self.créer_niveau(self.niveau05)
-        elif num == 6:
-            return self.créer_niveau(self.niveau06)
-        elif num == 7:
-            return self.créer_niveau(self.niveau07)
-        elif num == 8:
-            return self.créer_niveau(self.niveau08)
         else:
             return self.créer_niveau(self.niveau00, self.thème['bambou'])
 
