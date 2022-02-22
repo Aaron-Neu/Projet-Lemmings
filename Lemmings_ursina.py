@@ -9,7 +9,6 @@ Documentation: https://www.ursinaengine.org/documentation.html
 Toutes licenses associes sont mentionnes dans le fichier texte 'credit.txt'
 """
 from random import randint
-from turtle import position
 from ursina import curve
 from ursina import *
 
