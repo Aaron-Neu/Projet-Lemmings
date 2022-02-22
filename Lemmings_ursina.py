@@ -404,8 +404,8 @@ class Niveaux():
     def generer_niveau(self, num):
         if num == 1:
             return self.créer_niveau(self.niveau01, self.thème['ville'])
-        elif num == 2:
-            return self.créer_niveau(self.niveau02)
+        if num == 2:
+            return self.créer_niveau(self.niveau02, self.thème['bambou'])
         elif num == 3:
             return self.créer_niveau(self.niveau03)
         else:
@@ -665,6 +665,13 @@ class Jeu(Entity):
             [self.scene_active.append(x) for x in lvl]
 
         if self.num_niveaux == 2:
+            self.music.jouer_music('gameplay00')
+            self.lemmings_cap += 10
+            lvl = self.niveaux.generer_niveau(2)
+            lvl.append(self.niveaux.Win_block(self, position=(200, -50,)))
+            [self.scene_active.append(x) for x in lvl]
+
+        if self.num_niveaux == 3 :
             destroy(help_tip)
             Camera.disable(self.camera)
 
