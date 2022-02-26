@@ -1,7 +1,10 @@
 """
 Auteurs : Dyami et Andy
+
 Projet Lemming avec ASCII
 """
+
+
 class Lemming_2d():
     def __init__(self, l, c, d):
         self.l = l
@@ -19,7 +22,7 @@ class Lemming_2d():
             x = '>'
         else:
             x = '<'
-        if not (self.l ,self.c ,self.d) == (0,0,0):
+        if not (self.l, self.c, self.d) == (0, 0, 0):
             grotte[self.l][0] = grotte[self.l][0][:self.c] + \
                 x + grotte[self.l][0][self.c+1:]
 
@@ -51,16 +54,16 @@ class Jeu_2d():
         [print(i) for i in self.grotte]
 
     def tour(self):
-        if self.nbexit > self.nblem *.5:
+        if self.nbexit > self.nblem * .5:
             print('🎆🎇🎆🎇🎆🎇\n Vous avez gangne')
             self.running = False
         else:
             self.affiche()
         for e in self.lemmings:
             if self.grotte[e.l][0][e.c] == '🚪':
-                Lemming_2d.action(e, 1, 1, 1, self.grotte,False)
+                Lemming_2d.action(e, 1, 1, 1, self.grotte, False)
             elif self.grotte[e.l][0][e.c+e.d] == '🔓':
-                Lemming_2d.action(e,0,0,0, self.grotte)
+                Lemming_2d.action(e, 0, 0, 0, self.grotte)
                 self.nbexit += 1
                 self.lemmings.remove(e)
             else:
@@ -76,9 +79,8 @@ class Jeu_2d():
                         Lemming_2d.action(e, e.l, e.c-1, e.d, self.grotte)
                     else:
                         Lemming_2d.action(e, e.l, e.c, 1, self.grotte)
-        
 
-    def demarre(self):
+    def demarer(self):
         while self.running:
             x = input(
                 'appuyez sur "1" pour ajouter un lemming, "q" pour quitter ou toutes autres touches pour continuez: ')
