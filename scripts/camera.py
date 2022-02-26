@@ -7,6 +7,7 @@ Camera pour le Projet Lemming en 3d
 from ursina import curve
 from ursina import *
 
+
 class Camera(Entity):
     """
     Camera basic avec une limite max et min sur le zoom
@@ -23,8 +24,10 @@ class Camera(Entity):
         self.zoom_speed = 1.25
         self.zoom_smoothing = 8
         self.rotate_around_mouse_hit = False
+
         self.max_zoom = 200
         self.min_zoom = 20
+        self.hauteur_niveau = 0
 
         self.start_position = self.position
         self.perspective_fov = camera.fov
@@ -113,6 +116,7 @@ class Camera(Entity):
 
         if self.focus:
             if len(self.instance_jeu.lemmings_actif) > 0:
-                self.position = self.instance_jeu.lemmings_actif[-1].position
-        
+                if self.instance_jeu.lemmings_actif[-1].Y > -self.hauteur_niveau:
+                    self.position = self.instance_jeu.lemmings_actif[-1].position
+
         camera.z = lerp(camera.z, self.target_z, time.dt*self.zoom_smoothing)

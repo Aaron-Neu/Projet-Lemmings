@@ -22,6 +22,7 @@ class Niveau():
             'bambou': ['grey_stone', ['Bamboo_Texture', 'Bamboo'], ['Bamboo_color', 'Iphone_Bamboo'], 'Bamboo_Forest'],
             'ville': ['concrete', ['Cracked_Asphalt', 'foot_Steel'], ['rebar', 'Shingles'], 'Macau']
         }
+        self.hauteur_niveau = 0
 
     def generer_niveau(self, num):
         if num == 1:
@@ -35,11 +36,12 @@ class Niveau():
 
     def créer_niveau(self, texture_niveau, thème=['erreur', ['erreur'], ['erreur'], 'erreur']):
         # creation d'un niveau a partir d'une image
+        self.hauteur_niveau = texture_niveau.height
+
         bornes = thème[0]
         principale = thème[1]
         secondaire = thème[2]
         fond = thème[3]
-
         décalage = 10
         couleur_encadrement = color.rgb(252, 234, 196)
         niveau_cadre = [Entity(enabled=False, position=(-1, -1, -1))]

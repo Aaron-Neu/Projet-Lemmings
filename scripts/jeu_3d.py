@@ -106,6 +106,7 @@ class Jeu_3d(Entity):
             self.music.jouer_music('gameplay00')
             self.lemmings_cap += 5
             lvl = self.niveaux.generer_niveau(0)
+            self.camera.hauteur_niveau = self.niveaux.hauteur_niveau
             lvl.append(self.niveaux.Win_block(self, position=(57.5, -22,)))
             [self.scene_active.append(x) for x in lvl]
 
@@ -113,6 +114,7 @@ class Jeu_3d(Entity):
             self.music.jouer_music('gameplay00')
             self.lemmings_cap += 10
             lvl = self.niveaux.generer_niveau(1)
+            self.camera.hauteur_niveau = self.niveaux.hauteur_niveau
             lvl.append(self.niveaux.Win_block(self, position=(130, -40,)))
             lvl.append(Char(self, (20, -40,)))
             [self.scene_active.append(x) for x in lvl]
@@ -121,6 +123,7 @@ class Jeu_3d(Entity):
             self.music.jouer_music('gameplay00')
             self.lemmings_cap += 10
             lvl = self.niveaux.generer_niveau(2)
+            self.camera.hauteur_niveau = self.niveaux.hauteur_niveau
             lvl.append(self.niveaux.Win_block(self, position=(200, -50,)))
             [self.scene_active.append(x) for x in lvl]
 

@@ -112,7 +112,7 @@ class Lemming(Entity):
             self.y -= min(self.air_temps * self.gravité, ray.distance-.1)
             self.air_temps += time.dt*4 * self.gravité
             if self.y < -200:
-                self.instance_jeu.removelemming(self)
+                self.instance_jeu.retire_lemming(self)
 
         # si le lemming saute
         if self.sauter:
@@ -252,7 +252,7 @@ class Char(Entity):
             self.y -= min(self.air_temps * self.gravité, ray.distance-.1)
             self.air_temps += time.dt*4 * self.gravité
             if self.y < -200:
-                self.instance_jeu.removelemming(self)
+                self.instance_jeu.retire_lemming(self)
 
     def tire(self, target):
         if self.tire_refroidir:
@@ -262,7 +262,7 @@ class Char(Entity):
         obus_ind.animate_position(target, duration=1, curve=curve.in_out_quad)
         ray = boxcast(obus_ind.world_position, distance=.5, thickness=.5)
         if ray.entity in self.instance_jeu.lemmings_actif:
-            self.instance_jeu.removelemming(ray.entity)
+            self.instance_jeu.retire_lemming(ray.entity)
         self.obus.append(obus_ind)
         invoke(self.tire_a_zero, delay=2)
 
