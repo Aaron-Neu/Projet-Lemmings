@@ -28,12 +28,15 @@ class Camera(Entity):
         self.max_zoom = 200
         self.min_zoom = 20
         self.hauteur_niveau = 0
+        self.lemming_ind = 0
+        self.prev_lemming_iter = None
+        self.next_lemming_iter = None
 
         self.start_position = self.position
         self.perspective_fov = camera.fov
         self.on_destroy = self.on_disable
         self.focus = True
-        self.hotkeys = {'focus': 'f', 'reset_center': 'shift+f'}
+        self.hotkeys = {'focus': 'f', 'reset_center': 'shift+f','prev_lemming':'[','next_lemming':']'}
 
     def on_enable(self):
         # fonction pour utiliser la 3d
@@ -55,7 +58,19 @@ class Camera(Entity):
     def input(self, key):
         combined_key = ''.join(
             e+'+' for e in ('control', 'shift', 'alt') if held_keys[e] and not e == key) + key
+        
+        if combined_key == self.hotkeys['prev_lemming']:
+            if len(self.instance_jeu.lemmings_actif) > abs(self.lemming_ind):
+                self.lemming_ind -= 1
+            else:
+                self.lemming_ind = -1
 
+        if combined_key == self.hotkeys['next_lemming']:
+            if len(self.instance_jeu.lemmings_actif) > abs(self.lemming_ind)+1:
+                self.lemming_ind += 1
+            else:
+                self.lemming_ind = -1
+        
         if combined_key == self.hotkeys['reset_center']:
             self.animate_position(self.start_position,
                                   duration=.1, curve=curve.linear)
@@ -82,7 +97,6 @@ class Camera(Entity):
                 camera.world_position = org_pos
 
     def update(self):
-        global dimensions_niveau
         if mouse.right:
             self.rotation_x -= mouse.velocity[1] * self.rotation_speed
             self.rotation_y += mouse.velocity[0] * self.rotation_speed
@@ -116,7 +130,11 @@ class Camera(Entity):
 
         if self.focus:
             if len(self.instance_jeu.lemmings_actif) > 0:
-                if self.instance_jeu.lemmings_actif[-1].Y > -self.hauteur_niveau:
-                    self.position = self.instance_jeu.lemmings_actif[-1].position
+                lemming_in_focus = self.instance_jeu.lemmings_actif[-1]
+                if abs(self.lemming_ind) < len(self.instance_jeu.lemmings_actif): 
+                    lemming_in_focus = self.instance_jeu.lemmings_actif[self.lemming_ind]
+                if lemming_in_focus.Y > -self.hauteur_niveau:
+                    lemming_in_focus.color = color.white
+                    self.position = lemming_in_focus.position
 
         camera.z = lerp(camera.z, self.target_z, time.dt*self.zoom_smoothing)

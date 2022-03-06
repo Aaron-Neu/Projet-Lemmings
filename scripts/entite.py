@@ -15,7 +15,7 @@ class Lemming(Entity):
     Objet lemming, controler par le joueur, on instacie cette classe pour creer un lemming
     """
 
-    def __init__(self, jeu, **kwargs):
+    def __init__(self, jeu, position, **kwargs):
         super().__init__()
 
         nb_hasard = randint(1, 3)
@@ -27,10 +27,11 @@ class Lemming(Entity):
         self.scale_y = nb_hasard*.16
         self.scale_z = randint(1, 2)*.1
         self.scale_x = nb_hasard*.12
-        self.collider = 'lemming_model'
+        self.collider = 'box'
         self.color = color.white
         self.texture = 'walk.mov'
 
+        self.position = position
         self.__dict__.update(kwargs)
 
         self.vitesse = 5-nb_hasard
@@ -49,22 +50,22 @@ class Lemming(Entity):
         self._sequence_atterrissage = None
 
         # vérifie si un objet obstrue le lemming et modifie la position du lemming
-        ray_up = boxcast(self.world_position, self.down, distance=10, ignore=(
+        ray_up = boxcast(self.world_position, self.down, distance=1, ignore=(
             self, ), traverse_target=scene, thickness=.9)
         if ray_up.hit:
             self.y = ray_up.world_point[1] - 1
 
-        ray_down = boxcast(self.world_position, self.up, distance=10, ignore=(
+        ray_down = boxcast(self.world_position, self.up, distance=1, ignore=(
             self, ), traverse_target=scene, thickness=.9)
         if ray_down.hit:
             self.y = ray_down.world_point[1] + 1
 
-        ray_right = boxcast(self.world_position, self.right, distance=10, ignore=(
+        ray_right = boxcast(self.world_position, self.right, distance=1, ignore=(
             self, ), traverse_target=scene, thickness=.9)
         if ray_right.hit:
             self.x = ray_right.world_point[0] - 1
 
-        ray_left = boxcast(self.world_position, self.left, distance=10, ignore=(
+        ray_left = boxcast(self.world_position, self.left, distance=1, ignore=(
             self, ), traverse_target=scene, thickness=.9)
         if ray_left.hit:
             self.x = ray_left.world_point[0] + 1
@@ -121,6 +122,8 @@ class Lemming(Entity):
                 self.y_animator.kill()
                 self.air_temps = 0
                 self.tombe()
+        
+        self.color = color.white66
 
     def saut(self):
         # situation ou le saut est impossible
@@ -257,13 +260,13 @@ class Char(Entity):
     def tire(self, target):
         if self.tire_refroidir:
             return
-        obus_ind = Entity(model='cube', colider='cube', origin=self.origin,
+        obus_sing = Entity(model='cube', colider='cube', origin=self.origin,
                       position=(self.x+2*self.sens_mouvement,self.y+.5,self.z), scale=(.1, .1, .1), color=color.gray)
-        obus_ind.animate_position(target, duration=1, curve=curve.in_out_quad)
-        ray = boxcast(obus_ind.world_position, distance=.5, thickness=.5)
+        obus_sing.animate_position(target, duration=1, curve=curve.in_out_quad)
+        ray = boxcast(obus_sing.world_position, distance=.5, thickness=.5)
         if ray.entity in self.instance_jeu.lemmings_actif:
             self.instance_jeu.retire_lemming(ray.entity)
-        self.obus.append(obus_ind)
+        self.obus.append(obus_sing)
         invoke(self.tire_a_zero, delay=2)
 
     def tire_a_zero(self):

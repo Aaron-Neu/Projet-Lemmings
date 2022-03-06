@@ -13,12 +13,12 @@ from scripts.jeu_3d import Jeu_3d
 
 def jeu3d():
     Jeu3 = Jeu_3d()
-    Jeu3.demarer()
+    Jeu3.demarrer()
     Jeu3.app.run()
 
 def jeu2d():
-    Jeu2 = Jeu_2d(10)
-    Jeu2.demarer()
+    Jeu2 = Jeu_2d(10) 
+    Jeu2.demarrer()
 
 if __name__ == '__main__':
     jeu3d()

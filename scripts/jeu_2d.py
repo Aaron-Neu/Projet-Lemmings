@@ -80,7 +80,7 @@ class Jeu_2d():
                     else:
                         Lemming_2d.action(e, e.l, e.c, 1, self.grotte)
 
-    def demarer(self):
+    def demarrer(self):
         while self.running:
             x = input(
                 'appuyez sur "1" pour ajouter un lemming, "q" pour quitter ou toutes autres touches pour continuez: ')

@@ -6,9 +6,10 @@ Environnement pour le Projet Lemming en 3d
 from ursina import *
 
 from scripts.camera import Camera
-from scripts.entite import Lemming,Char
+from scripts.entite import Lemming, Char
 from scripts.niveau import Niveau
 from scripts.son import Son
+
 
 class Jeu_3d(Entity):
     # configure la fenêtre d'affichage
@@ -29,8 +30,9 @@ class Jeu_3d(Entity):
     def __init__(self):
         super().__init__()
         self.music = Son()
-        self.niveaux = Niveau()
+        self.niveaux = Niveau(self)
         self.camera = Camera(self)
+        self.char = Char
 
         self.scene_active = []
         self.num_niveaux = 0
@@ -38,6 +40,7 @@ class Jeu_3d(Entity):
 
         self.lemmings = {}
         self.lemmings_actif = []
+        self.spawn_position = (0, 0,)
         self.lemmings_cap = 0
         self.croix_muet = Entity(model='cube', texture='mute', scale_x=.75, scale_y=.75,
                                  x=-6.6, y=-3.5, enabled=False, eternal=False)
@@ -55,29 +58,29 @@ class Jeu_3d(Entity):
             enabled=False
         )
 
-    def demarer(self):
+    def demarrer(self):
         # le menu d'entre du jeu
         [destroy(self.scene_active.pop())
          for _ in range(len(self.scene_active))]
         [self.retire_lemming(x)
          for x in self.lemmings_actif]
-        self.num_niveaux = 1
+        self.num_niveaux = 0
 
         self.music.jouer_music('start')
         Camera.disable(self.camera)
         lemmings_start = Entity(model='quad', texture='lemmings_start.mp4',
                                 scale=(14.5, 8.2))
-        boutton_demarer = Button(parent=camera.ui, model='cube',
-                                 x=-.33, y=.024, scale=(.325, .1, 1))
+        boutton_demarrer = Button(parent=camera.ui, model='cube',
+                                  x=-.33, y=.024, scale=(.325, .1, 1))
         boutton_quitter = Button(parent=camera.ui, model='cube',
                                  x=.33, y=.024, scale=(.325, .1, 1))
         boutton_muet = Button(parent=camera.ui, model='quad', scale_x=.095, scale_y=.095, x=-.825,
                               y=-.44)
         boutton_muet.on_click = self.muet
-        boutton_demarer.on_click = self.jeu
+        boutton_demarrer.on_click = self.jeu
         boutton_quitter.on_clic = application.quit
         [self.scene_active.append(x) for x in [
-            lemmings_start, boutton_demarer, boutton_quitter, boutton_muet, self.croix_muet]]
+            lemmings_start, boutton_demarrer, boutton_quitter, boutton_muet, self.croix_muet]]
 
     def muet(self):
         if not self.music.muet:
@@ -95,39 +98,22 @@ class Jeu_3d(Entity):
          for x in self.lemmings_actif]
 
         Camera.enable(self.camera)
+
         help_tip = Text(
             text="maintenez 'tab' pour obtenir de l'aide", origin=(0, 0), y=-.45, color=color.black)
         sky = Sky()
-
         [self.scene_active.append(x) for x in [
             help_tip, sky]]
 
+        lvl = self.niveaux.generer_niveau(self.num_niveaux)
+        self.camera.hauteur_niveau = self.niveaux.hauteur_niveau
+        [self.scene_active.append(x) for x in lvl]
+        print(lvl)
+
         if self.num_niveaux == 0:
-            self.music.jouer_music('gameplay00')
-            self.lemmings_cap += 5
-            lvl = self.niveaux.generer_niveau(0)
-            self.camera.hauteur_niveau = self.niveaux.hauteur_niveau
-            lvl.append(self.niveaux.Win_block(self, position=(57.5, -22,)))
-            [self.scene_active.append(x) for x in lvl]
+            invoke(self.gagner, delay=3)
 
-        if self.num_niveaux == 1:
-            self.music.jouer_music('gameplay00')
-            self.lemmings_cap += 10
-            lvl = self.niveaux.generer_niveau(1)
-            self.camera.hauteur_niveau = self.niveaux.hauteur_niveau
-            lvl.append(self.niveaux.Win_block(self, position=(130, -40,)))
-            lvl.append(Char(self, (20, -40,)))
-            [self.scene_active.append(x) for x in lvl]
-
-        if self.num_niveaux == 2:
-            self.music.jouer_music('gameplay00')
-            self.lemmings_cap += 10
-            lvl = self.niveaux.generer_niveau(2)
-            self.camera.hauteur_niveau = self.niveaux.hauteur_niveau
-            lvl.append(self.niveaux.Win_block(self, position=(200, -50,)))
-            [self.scene_active.append(x) for x in lvl]
-
-        if self.num_niveaux == 3 :
+        if self.num_niveaux == 7:
             destroy(help_tip)
             Camera.disable(self.camera)
 
@@ -143,14 +129,15 @@ class Jeu_3d(Entity):
 
             [self.scene_active.append(x) for x in lvl]
 
-    def ajout_lemming(self, position=(2, -5, 0)):
+    def ajout_lemming(self):
         # ajoute un lemming a la position position
+        position = self.spawn_position
         if len(self.lemmings_actif) > self.lemmings_cap:
-            Text("vous ne pouvez plus ajoutes de lemming, si vous etre bloquer, recomencer avec 'escape'")
+            Text("vous ne pouvez plus ajoutes de lemming, si vous êtes bloquer, recommencer avec 'escape'")
             return
 
         lemming_nom = 'lemming-'+str(len(self.lemmings)+1)
-        self.lemmings[lemming_nom] = Lemming(self, position=position)
+        self.lemmings[lemming_nom] = Lemming(self, position)
         self.lemmings_actif = [
             lemming for lemming in self.lemmings.values() if lemming.enabled == True]
 
@@ -183,7 +170,7 @@ class Jeu_3d(Entity):
         Camera.disable(self.camera)
         perdu_screen = [
             Entity(model='quad', scale=(100, 100, 1), color=color.black, z=-3),
-            Text('''Tu as perdu!,\n\n presse "escape"''')
+            Text('''Tu as perdu!,\n\n "escape" pour repartir au menu principale \n\n "r" pour recommencer''')
         ]
         [self.scene_active.append(x) for x in perdu_screen]
 
@@ -196,14 +183,20 @@ class Jeu_3d(Entity):
                 for lemming in self.lemmings_actif:
                     lemming.saut()
 
-            if key in 'shift':
+            if held_keys['shift']:
                 for lemming in self.lemmings_actif:
                     lemming.précipité()
+
+            if key == 'r':
+                self.jeu()
 
             if held_keys['tab']:
                 self.panneau_aide.enabled = True
             else:
                 self.panneau_aide.enabled = False
 
+            if key == 's':
+                self.gagner()
+
             if key == Keys.escape:
-                self.demarer()
+                self.demarrer()
