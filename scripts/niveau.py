@@ -105,6 +105,8 @@ class Niveau():
             lvl.append(self.instance_jeu.char(
                 self.instance_jeu, position=(20, -40,)))
             return lvl
+        elif num == 7 :
+            return 
 
         else:
             return []
