@@ -50,7 +50,7 @@ class Niveau():
             ]
 
         if num == 1:
-            self.instance_jeu.music.jouer_music('gameplay00')
+            self.instance_jeu.music.jouer_music('gameplay')
             self.instance_jeu.lemmings_cap += 5
             self.instance_jeu.spawn_position = (-8, -4,)
             lvl = self.créer_niveau(
@@ -61,7 +61,6 @@ class Niveau():
             return lvl
 
         elif num == 2:
-            self.instance_jeu.music.jouer_music('gameplay00')
             self.instance_jeu.lemmings_cap += 5
             self.instance_jeu.spawn_position = (0, 0,)
             lvl = self.créer_niveau(
@@ -70,7 +69,6 @@ class Niveau():
             return lvl
 
         elif num == 3:
-            self.instance_jeu.music.jouer_music('gameplay00')
             self.instance_jeu.lemmings_cap += 5
             self.instance_jeu.spawn_position = (0, 0,)
             lvl = self.créer_niveau(
@@ -79,7 +77,6 @@ class Niveau():
             return lvl
 
         elif num == 4:
-            self.instance_jeu.music.jouer_music('gameplay00')
             self.instance_jeu.lemmings_cap += 5
             self.instance_jeu.spawn_position = (0, 0,)
             lvl = self.créer_niveau(
@@ -88,7 +85,6 @@ class Niveau():
             return lvl
 
         elif num == 5:
-            self.instance_jeu.music.jouer_music('gameplay00')
             self.instance_jeu.lemmings_cap += 5
             self.instance_jeu.spawn_position = (0, 0,)
             lvl = self.créer_niveau(
@@ -97,7 +93,6 @@ class Niveau():
             return lvl
 
         elif num == 6:
-            self.instance_jeu.music.jouer_music('gameplay00')
             self.instance_jeu.lemmings_cap += 10
             self.instance_jeu.spawn_position = (0, 0,)
             lvl = self.créer_niveau(
@@ -106,6 +101,10 @@ class Niveau():
             lvl.append(self.instance_jeu.char(
                 self.instance_jeu, position=(20, -40,)))
             return lvl
+        
+        elif num == 7:
+            self.instance_jeu.music.jouer_music('out')
+            return []
         
         else:
             return []

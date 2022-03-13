@@ -51,6 +51,8 @@ class Jeu_3d(Entity):
                 Text('utiliser "espace" pour faire sauter\n le(s) lemming(s)'),
                 Text('utiliser "shift" pour faire précipité\n le(s) lemming(s)'),
                 Text('utiliser la souris pour naviguer\n'),
+                Text('utiliser "[]" pour cycles entre lemmings\n'),
+                Text('utiliser "s" pour skipper un niveau\n'),
                 Text('utiliser "shift" + "f" pour recentrer\n la caméra')
             ),
             popup=True,
@@ -91,11 +93,10 @@ class Jeu_3d(Entity):
 
     def jeu(self):
         self.vue_menu = False
-        [destroy(self.scene_active.pop())
-         for _ in range(len(self.scene_active))]
         [self.retire_lemming(x)
          for x in self.lemmings_actif]
-
+        [destroy(self.scene_active.pop())
+         for _ in range(len(self.scene_active))]
         Camera.enable(self.camera)
 
         help_tip = Text(
@@ -109,7 +110,6 @@ class Jeu_3d(Entity):
         [self.scene_active.append(x) for x in lvl]
 
         if self.num_niveaux == 0:
-            
             invoke(self.gagner, delay=3)
 
         if self.num_niveaux == 7:
@@ -132,7 +132,7 @@ class Jeu_3d(Entity):
         # ajoute un lemming a la position position
         position = self.spawn_position
         if len(self.lemmings_actif) > self.lemmings_cap:
-            Text("vous ne pouvez plus ajoutes de lemming, si vous êtes bloquer, recommencer avec 'escape'")
+            Text("vous ne pouvez plus ajoutes de lemming, si vous êtes bloquer, recommencer avec 'r'")
             return
 
         lemming_nom = 'lemming-'+str(len(self.lemmings)+1)
