@@ -22,11 +22,11 @@ def jeu2d():
 
 if __name__ == '__main__':
     jeu3d()
-    # rep = 0
-    # while True:    
-    #     if rep == 2:
-    #         jeu2d()
-    #     elif rep == 3:
-    #         jeu3d()
-    #     else:
-    #         rep = int(input('entrer 2 pour le jeu en 2d et 3 pour le jeu en 3d\nchoix: '))
+    rep = 0
+    while True:    
+        if rep == 2:
+            jeu2d()
+        elif rep == 3:
+            jeu3d()
+        else:
+            rep = int(input('entrer 2 pour le jeu en 2d et 3 pour le jeu en 3d\nchoix: '))

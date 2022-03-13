@@ -1,0 +1,31 @@
+Ne sois pas un lemming, bats-toi pour tes libertes!
+-------------------------------------
+Produit par Dyami Neu et Andy How
+Ce travail est marque avec CC BY-NC-SA 2.0.
+
+Construit en Python avec le module Ursina.
+-----------assets liscences----------
+Anji bamboo forest (title screen) - Clerkwheel (modified) | CC 3.0
+Golden.ttf (title font) - imagex | CC 3.0
+Pixel.ttf (CC font) - Markus Schröppel | CC 3.0
+Mao zedong propaganda music Trap remix (title screen music) - Vosi
+=====================================
+    Communist Party of China
+Without the Communist Party, There Would Be No New China
+People of all ethnic groups chant Chairman Mao
+I love the Great Motherland
+Main theme from The Red Detachment of Women
+Selection from The Red Detachment of Women
+    US army
+When Johny Comes Marching Home
+=====================================
+
+"Bamboo Forest" - filmmaker in japan | CC BY-NC-ND 2.0
+"camouflage pattern" - Creativity103 | CC BY-NC-ND 2.0
+"cave" - matthewvenn | CC BY 2.0
+"The Chinese Village" - Rob Ketcherside | CC PDM 1.0
+"Basement" - howzey | CC BY-NC-ND 2.0
+"Postcard: Mica Dam Construction, Revelstoke, BC" - blizzy63 | CC PDM 1.0
+"Hong Kong Victoria Harbour 01" - dbrooker1 | CC BY-NC-ND 2.0
+-------------------------------------
+Appuyez sur "escape" pour quitter au menu principal
