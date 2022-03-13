@@ -20,7 +20,6 @@ class Jeu_3d(Entity):
     forced_aspect_ratio = 1.778
     app = Ursina(fullscreen=fullscreen, development_mode=development_mode,
                  title=title, borderless=borderless, forced_aspect_ratio=forced_aspect_ratio)
-    window.fps_counter.enabled = True
     window.icon = 'icon.ico'
 
     """
@@ -108,9 +107,9 @@ class Jeu_3d(Entity):
         lvl = self.niveaux.generer_niveau(self.num_niveaux)
         self.camera.hauteur_niveau = self.niveaux.hauteur_niveau
         [self.scene_active.append(x) for x in lvl]
-        print(lvl)
 
         if self.num_niveaux == 0:
+            
             invoke(self.gagner, delay=3)
 
         if self.num_niveaux == 7:

@@ -41,12 +41,13 @@ class Niveau():
 
     def generer_niveau(self, num):
         if num == 0:
-            return [Text(
+            return [Entity(model='quad', scale=(100, 100,), color=color.yellow),
+            Text(
                 """La guerre civile chinoise décrit la lutte entre les nationalistes du Guomindang\n 
                 et le Parti communiste chinois (PCC) pour le contrôle de la Chine.\n 
                 Elle s’est terminée par la fuite de Jiang Jieshi vers Taïwan,\n
-                la victoire à Mao Zedong et au PCC et la formation de la République populaire de Chine."""
-            )]
+                la victoire à Mao Zedong et au PCC et la formation de la République populaire de Chine.""", background=True,x=-.7, y=.3)
+            ]
 
         if num == 1:
             self.instance_jeu.music.jouer_music('gameplay00')
@@ -140,13 +141,10 @@ class Niveau():
                                                    décalage, texture_niveau.height,),
                                                texture=secondaire[randint(0, len(secondaire)-1)]))
         # Cadre autour du niveau
-        niveau_cadre.extend([Entity(model='plane', color=color.gray,
-                                    scale=(1000, 1, 1000), rotation=(180),
-                                    position=(0, -(texture_niveau.height)-1.5, 5)),
-                            Entity(model='cube', texture=fond,
-                                   scale=(texture_niveau.width-1,
-                                          texture_niveau.height+1, 1),
-                                   position=((texture_niveau.width-2*décalage)/2, -(texture_niveau.height)/2-.5, 5)),
+        niveau_cadre.extend([Entity(model='cube', texture=fond,
+                                    scale=(texture_niveau.width-1,
+                                           texture_niveau.height+1, 1),
+                                    position=((texture_niveau.width-2*décalage)/2, -(texture_niveau.height)/2-.5, 5)),
                              Entity(model='cube', color=couleur_encadrement,
                                           scale=(texture_niveau.width,
                                                  texture_niveau.height+2, 1),
@@ -166,14 +164,19 @@ class Niveau():
                                           scale=(texture_niveau.width, 1, 10),
                                     position=((texture_niveau.width-2*décalage)/2, 0)),
                             Entity(model='cube', color=couleur_encadrement,
-                                   scale=(
-                                       1, texture_niveau.height+2, 10),
+                                   scale=(1, texture_niveau.height+2, 10),
                                    position=(-décalage, -texture_niveau.height/2-.5)),
-                            Entity(model='cube', color=couleur_encadrement,
-                                   scale=(
-                                       1, texture_niveau.height+2, 10),
-                                   position=(texture_niveau.width-décalage, -texture_niveau.height/2-.5))
-
+                            Entity(model='cube', color=couleur_encadrement,scale=(1, texture_niveau.height+2, 10),
+                                   position=(texture_niveau.width-décalage, -texture_niveau.height/2-.5)),
+                            Entity(model='plane', color=color.gray,
+                                   scale=(1000, 1, 1000), rotation=(180),
+                                   position=(0, -(texture_niveau.height*2.5)-1.5, 5)),
+                            Entity(model='crt_model', texture='crt_texture', scale=(texture_niveau.width/1.2, texture_niveau.height*1.5, 20),
+                                   position=((texture_niveau.width-2*décalage)/2, -texture_niveau.height, -5), rotation_y=180, double_sided=True),
+                            Entity(model='clavier_model', color=couleur_encadrement,
+                                   scale=(30, 30, 30),
+                                   position=(0, -(texture_niveau.height*2.5), -20),rotation_y=180),
+                            
                              ])
         return niveau_cadre
 
@@ -186,11 +189,11 @@ class Niveau():
             self.scale = (.5, .5, .5)
             self.enabled = True
             self.double_sided = True
-            self.texture = 'concrete'
             self.__dict__.update(kwargs)
 
         def update(self):
-            ray = boxcast(self.world_position, distance=.5, thickness=1)
+            ray = boxcast(self.world_position, self.up,
+                          distance=self.scale_y, thickness=self.scale_x)
             if ray.entity in self.instance_jeu.lemmings_actif:
                 self.instance_jeu.retire_lemming(ray.entity)
 
@@ -203,12 +206,14 @@ class Niveau():
             self.scale = (.5, .5, .5)
             self.enabled = True
             self.double_sided = True
-            self.texture = 'concrete'
+            self.texture = 'trophee_texture'
             self.color = color.yellow
             self.__dict__.update(kwargs)
 
         def update(self):
-            if self.intersects():
+            ray = boxcast(self.world_position, self.left,
+                          distance=self.scale_y, thickness=self.scale_x)
+            if ray.entity in self.instance_jeu.lemmings_actif:
                 self.instance_jeu.gagner()
             if self in self.instance_jeu.scene_active:
                 self.rotation_y += .5
