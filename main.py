@@ -21,7 +21,6 @@ def jeu2d():
     Jeu2.demarrer()
 
 if __name__ == '__main__':
-    jeu3d()
     rep = 0
     while True:    
         if rep == 2:

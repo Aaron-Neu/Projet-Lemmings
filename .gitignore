@@ -1,2 +1,8 @@
 .vscode/settings.json
 scripts/__pycache__
+scripts/__pycache__/camera.cpython-310.pyc
+scripts/__pycache__/entite.cpython-310.pyc
+scripts/__pycache__/jeu_2d.cpython-310.pyc
+scripts/__pycache__/jeu_3d.cpython-310.pyc
+scripts/__pycache__/niveau.cpython-310.pyc
+scripts/__pycache__/son.cpython-310.pyc
