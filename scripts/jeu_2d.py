@@ -36,7 +36,7 @@ class Case_2d():
 
 class Jeu_2d():
     def __init__(self, nblem):
-        self.grotte = [['#🚪############'],
+        self.grotte = [['#🚪############'], # definie le parcour a faire
                        ['#            #'],
                        ['#####  #######'],
                        ['#      #     #'],
@@ -56,17 +56,17 @@ class Jeu_2d():
     def tour(self):
         if self.nbexit > self.nblem * .5:
             print('🎆🎇🎆🎇🎆🎇\n Vous avez gangne')
-            self.running = False
+            self.running = False #arrete le jeu après avoir gagné
         else:
             self.affiche()
-        for e in self.lemmings:
+        for e in self.lemmings: #regarde si les cases sont libre, et la direction que les lemmings vont aller
             if self.grotte[e.l][0][e.c] == '🚪':
                 Lemming_2d.action(e, 1, 1, 1, self.grotte, False)
-            elif self.grotte[e.l][0][e.c+e.d] == '🔓':
+            elif self.grotte[e.l][0][e.c+e.d] == '🔓': #enlève un lemming du jeu, apres avoir complété le parcour
                 Lemming_2d.action(e, 0, 0, 0, self.grotte)
                 self.nbexit += 1
                 self.lemmings.remove(e)
-            else:
+            else: #permet de faire bouger les lemmings
                 if Case_2d.libre(self.grotte, e.l+1, e.c):
                     Lemming_2d.action(e, e.l+1, e.c, e.d, self.grotte)
                 if e.d == 1:
@@ -80,12 +80,12 @@ class Jeu_2d():
                     else:
                         Lemming_2d.action(e, e.l, e.c, 1, self.grotte)
 
-    def demarrer(self):
+    def demarrer(self): #permet de demarrer le jeu en 2d
         while self.running:
             x = input(
-                'appuyez sur "1" pour ajouter un lemming, "q" pour quitter ou toutes autres touches pour continuez: ')
+                'appuyez sur "1" pour ajouter un lemming, "q" pour quitter ou toutes autres touches pour continuer: ')
             if x == 'q':
-                self.running = False
+                self.running = False #permet d'arreter le jeu
             elif x == '1':
-                self.lemmings.append(Lemming_2d(0, 1, 1))
+                self.lemmings.append(Lemming_2d(0, 1, 1)) #ajoute un lemming
             self.tour()
