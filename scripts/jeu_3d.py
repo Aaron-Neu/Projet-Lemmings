@@ -3,7 +3,7 @@ Auteurs : Dyami Neu et Andy How
 
 Environnement pour le Projet Lemming en 3d
 """
-from ursina import *
+from ursina import * #importe tout les modules nécéssaires
 
 from scripts.camera import Camera
 from scripts.entite import Lemming, Char
@@ -129,7 +129,7 @@ class Jeu_3d(Entity):
             [self.scene_active.append(x) for x in lvl]
 
     def ajout_lemming(self):
-        # ajoute un lemming a la position position
+        # ajoute un lemming a la position de départ
         position = self.spawn_position
         if len(self.lemmings_actif) > self.lemmings_cap:
             Text("vous ne pouvez plus ajoutes de lemming, si vous êtes bloquer, recommencer avec 'r'")
@@ -141,7 +141,7 @@ class Jeu_3d(Entity):
             lemming for lemming in self.lemmings.values() if lemming.enabled == True]
 
     def retire_lemming(self, lemming_supprimer):
-        # supprimer un lemming
+        # supprime un lemming
         if lemming_supprimer == None:
             return
 
@@ -173,7 +173,7 @@ class Jeu_3d(Entity):
         ]
         [self.scene_active.append(x) for x in perdu_screen]
 
-    def input(self, key):
+    def input(self, key): #definie les touches auquel nous pouvons apuyer
         if not self.vue_menu:
             if key in ('+', '=') and len(self.lemmings) < self.lemmings_cap:
                 self.ajout_lemming()

@@ -29,7 +29,7 @@ class Lemming_2d():
 
 class Case_2d():
     def libre(grotte, l, c):
-        if grotte[l][0][c] in ['#', '<', '>']:
+        if grotte[l][0][c] in ['#', '<', '>']: #toutes les entités du jeu
             return False
         return True
 
@@ -87,5 +87,5 @@ class Jeu_2d():
             if x == 'q':
                 self.running = False #permet d'arreter le jeu
             elif x == '1':
-                self.lemmings.append(Lemming_2d(0, 1, 1)) #ajoute un lemming
+                self.lemmings.append(Lemming_2d(0, 1, 1)) #ajoute un lemming à la position de départ
             self.tour()
