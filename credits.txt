@@ -1,7 +1,6 @@
 Ne sois pas un lemming, bats-toi pour tes libertes!
 -------------------------------------
 Produit par Dyami Neu et Andy How
-Ce travail est marque avec CC BY-NC-SA 2.0.
 
 Construit en Python avec le module Ursina.
 -----------assets liscences----------
